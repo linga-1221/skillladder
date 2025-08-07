@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+python-dotenv
+openai
+pdfplumber
+pytesseract
+Pillow
+scikit-learn
+nltk
+firebase-admin

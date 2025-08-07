@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkaspironest_frontend=self.webpackChunkaspironest_frontend||[]).push([[869],{869:(e,s,n)=>{n.r(s),n.d(s,{default:()=>l});n(43);var a=n(579);function l(e){let{user:s}=e;return(0,a.jsxs)("div",{children:[(0,a.jsx)("h2",{className:"text-2xl font-bold text-blue-700 mb-4",children:"Admin Dashboard"}),(0,a.jsxs)("div",{className:"mb-4 text-gray-700",children:["Welcome, ",(0,a.jsx)("span",{className:"font-semibold",children:s.email}),"!"]}),(0,a.jsx)(AdminPanel,{})]})}}}]);
+//# sourceMappingURL=869.86130923.chunk.js.map

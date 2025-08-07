@@ -1,0 +1,50 @@
+/* Glassmorphism and dark mode for the portal */
+:root {
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-blur: 18px;
+  --glass-border: 1.5px solid rgba(255,255,255,0.18);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+body.dark {
+  background: linear-gradient(120deg, #111827 0%, #1e293b 100%);
+  color: #f1f5f9;
+}
+
+.glass {
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  border-radius: 1.5rem;
+  border: var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-top: 1px solid rgba(255,255,255,0.2);
+  border-left: 1px solid rgba(255,255,255,0.2);
+}
+
+.glass-navbar {
+  background: rgba(30, 41, 59, 0.85);
+  border-bottom: 1px solid rgba(255,255,255,0.13);
+  box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.17);
+  backdrop-filter: blur(12px);
+}
+
+.glass-card {
+  background: rgba(51, 65, 85, 0.85);
+  border-radius: 1.25rem;
+  box-shadow: 0 2px 24px 0 rgba(31, 38, 135, 0.17);
+  border: 1px solid rgba(255,255,255,0.09);
+  backdrop-filter: blur(10px);
+}
+
+.glass-btn {
+  background: linear-gradient(90deg, #6366f1 0%, #0ea5e9 100%);
+  color: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 16px 0 rgba(59, 130, 246, 0.19);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.glass-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 32px 0 rgba(59, 130, 246, 0.29);
+}
