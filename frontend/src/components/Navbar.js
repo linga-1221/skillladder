@@ -5,6 +5,7 @@ import loginBg from '../images/login.jpg';
 import studentBg from '../images/student.jpg';
 import employeeBg from '../images/employee.jpg';
 
+import { useNavigate } from "react-router-dom";
 export default function Navbar({ user }) {
   const location = useLocation();
   // Determine background image based on route and role
@@ -31,12 +32,20 @@ export default function Navbar({ user }) {
               <Link to="/resume-ats" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/resume-ats" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Resume & ATS</Link>
               <Link to="/job-finder" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/job-finder" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Job Finder</Link>
               <Link to="/activities" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/activities" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Activities</Link>
+              <Link to="/learning" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/learning" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Learning</Link>
+              <Link to="/career-counselling" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/career-counselling" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Career Counselling</Link>
+              <Link to="/career-guidance" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/career-guidance" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Career Guidance</Link>
             </>
           )}
           {(user && user.role === "employee") && (
             <>
-              <Link to="/employee-home" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/employee-home" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Home</Link>
+              <Link to="/jobs" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/jobs" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Jobs</Link>
               <Link to="/student-progress" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/student-progress" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>Student Progress</Link>
+{user && user.role === 'student' && (
+  <Link to="/career-guidance" className={`text-lg font-semibold transition-colors duration-200 ${location.pathname === "/career-guidance" ? "text-yellow-300" : "text-white hover:text-yellow-300"}`}>
+    Career Guidance
+  </Link>
+)}
             </>
           )}
         </div>

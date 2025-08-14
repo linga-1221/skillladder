@@ -248,3 +248,15 @@ async def feedback(feedback: str = Form(...)):
 async def chatbot(query: str = Form(...)):
     # TODO: Integrate AI chatbot
     return {"response": "This is a placeholder response."}
+
+# JSON endpoint for chatbot (for frontend)
+from fastapi import Body
+
+@app.post("/chatbot")
+async def chatbot_json(request: Request):
+    data = await request.json()
+    question = data.get("question")
+    if not question:
+        raise HTTPException(status_code=400, detail="Missing 'question' in request body.")
+    # TODO: Integrate chatbot logic here
+    return {"answer": f"You asked: {question}. This is a placeholder answer."}

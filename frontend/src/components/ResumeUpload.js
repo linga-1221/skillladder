@@ -26,11 +26,19 @@ export default function ResumeUpload({ onResult }) {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
-      if (response.ok) {
+      let data;
+      try {
+        data = await response.json();
+        console.log('Resume upload backend response:', data); // Debug log
+      } catch (jsonErr) {
+        setError('Invalid response from server.');
+        setUploading(false);
+        return;
+      }
+      if (response.ok && data) {
         onResult(data);
       } else {
-        setError(data.detail || "Upload failed.");
+        setError((data && data.detail) || "Upload failed.");
       }
     } catch (err) {
       setError("Server error. Try again later.");

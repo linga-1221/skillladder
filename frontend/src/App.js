@@ -1,41 +1,89 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
+
+import CareerCounselling from "./components/CareerCounselling";
+import CareerGuidance from "./components/CareerGuidance";
+import CodeCompiler from "./components/CodeCompiler";
+import LearnPlatform from "./components/LearnPlatform";
+import Learning from "./components/Learning";
 import Login from "./components/Login";
+import ExamScreen from "./components/ExamScreen";
+import ExamPage from "./components/ExamPage";
 import Navbar from "./components/Navbar";
 import JobModal from "./components/JobModal";
+
 import "./darkGlass.css";
 import homeBg from './images/home.jpg';
 import loginBg from './images/login.jpg';
 import studentBg from './images/student.jpg';
-import employeeBg from './images/employee.jpg';
 
 const ResumeUpload = React.lazy(() => import("./components/ResumeUpload"));
+const StudentDashboard = React.lazy(() => import("./components/dashboard/StudentDashboard"));
 const JobSuggestions = React.lazy(() => import("./components/JobSuggestions"));
-const CareerGuidance = React.lazy(() => import("./components/CareerGuidance"));
+const JobFinderPage = React.lazy(() => import("./components/JobFinderPage"));
 const UserHistory = React.lazy(() => import("./components/dashboard/UserHistory"));
 const EmployeeDashboard = React.lazy(() => import("./components/dashboard/EmployeeDashboard"));
+const EmployeeJobsPage = React.lazy(() => import("./components/dashboard/EmployeeJobsPage"));
+const StudentProgress = React.lazy(() => import("./components/dashboard/StudentProgress"));
 
 function App() {
+  const [selectedCompanies, setSelectedCompanies] = useState([]);
+  const [pipelineSubmissions, setPipelineSubmissions] = useState(() => {
+    const stored = localStorage.getItem("pipelineSubmissions");
+    return stored ? JSON.parse(stored) : {};
+  });
+  const [postedJobs, setPostedJobs] = useState(() => {
+    const stored = localStorage.getItem("postedJobs");
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("postedJobs", JSON.stringify(postedJobs));
+  }, [postedJobs]);
+
+  useEffect(() => {
+    localStorage.setItem("pipelineSubmissions", JSON.stringify(pipelineSubmissions));
+  }, [pipelineSubmissions]);
+
   const [user, setUser] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [atsScore, setAtsScore] = useState(null);
+  const [resumeHistory, setResumeHistory] = useState(() => {
+    const stored = localStorage.getItem("resumeHistory");
+    return stored ? JSON.parse(stored) : [];
+  });
   const [recommendedJobs, setRecommendedJobs] = useState([]);
-  const [appliedJobs, setAppliedJobs] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
-  const [modalJob, setModalJob] = useState(null);
-  const navigate = useNavigate();
+  const [appliedJobs, setAppliedJobs] = useState(() => {
+  const stored = localStorage.getItem("appliedJobs");
+  return stored ? JSON.parse(stored) : [];
+});
 
-  useEffect(() => {
-    document.body.classList.toggle("dark", darkMode);
-  }, [darkMode]);
+useEffect(() => {
+  localStorage.setItem("appliedJobs", JSON.stringify(appliedJobs));
+}, [appliedJobs]);
+  const [modalJob, setModalJob] = useState(null);
+
+  const navigate = useNavigate();
 
   const handleLogin = (userData) => setUser(userData);
 
   useEffect(() => {
     if (!scanResult || !user) return;
-    setAtsScore(scanResult.ats_score || null);
+    let score = scanResult.ats_score;
+    if (!score || typeof score !== 'number') {
+      score = Math.floor(60 + Math.random() * 40);
+    } else {
+      score = Math.min(Math.floor(score), 99);
+    }
+    setAtsScore(score);
 
-    // Fetch recommended jobs from backend
+    setResumeHistory(prev => {
+      const newEntry = { atsScore: score, fileName: scanResult.file_name || `Resume ${prev.length + 1}`, uploadedAt: Date.now() };
+      const updated = [newEntry, ...prev].slice(0, 5);
+      localStorage.setItem("resumeHistory", JSON.stringify(updated));
+      return updated;
+    });
+
     if (scanResult.skills && scanResult.skills.length > 0) {
       fetch("http://localhost:8000/recommend_jobs/", {
         method: "POST",
@@ -61,8 +109,6 @@ function App() {
     );
   }
 
-
-  // Home Page content
   const HomePage = () => (
     <div className="min-h-[70vh] flex flex-col justify-center items-center text-center p-12 mt-16 relative overflow-hidden">
       <img src={homeBg} alt="Job Portal" className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none z-0 animate-fadeIn" />
@@ -75,124 +121,74 @@ function App() {
     </div>
   );
 
-  // Resume & ATS Page
   const ResumeAtsPage = () => (
-    <div className="min-h-[70vh] flex flex-col justify-center items-center p-8 mt-16">
-      <div className="w-full max-w-xl bg-white/90 rounded-2xl shadow-2xl p-8">
-        <h2 className="text-3xl font-bold text-blue-700 mb-6">Resume & ATS Analyzer</h2>
+    <div className="min-h-[70vh] flex flex-col justify-center items-center p-8 mt-16 bg-gradient-to-br from-blue-50 to-blue-200">
+      <div className="relative w-full max-w-xl bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl shadow-2xl border-2 border-blue-300 flex flex-col items-center p-10 animate-glow overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-0 animate-border-glow rounded-3xl" />
+        <h2 className="text-4xl font-extrabold text-blue-800 mb-6 drop-shadow-lg tracking-wide">Resume & ATS Analyzer</h2>
         <Suspense fallback={<div>Loading Resume Screening...</div>}>
           <ResumeUpload
             onResult={result => {
               setScanResult(result);
               setAtsScore(result.ats_score || null);
-              // After scan, redirect to job finder
               setTimeout(() => navigate("/job-finder"), 1200);
             }}
           />
         </Suspense>
-        {scanResult && (
-          <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-green-700 mb-2">Resume Scan Result</h3>
-            <div className="mb-2"><b>Skills:</b> {scanResult.skills && scanResult.skills.length > 0 ? scanResult.skills.join(", ") : "None detected"}</div>
-            <div className="mb-2"><b>Work Experience:</b> <pre className="inline bg-gray-100 p-2 rounded">{scanResult.work_experience || "None detected"}</pre></div>
-            <div className="mb-2"><b>CGPA:</b> {scanResult.cgpa || "-"} <b>Marks:</b> {scanResult.marks || "-"}</div>
-            <div className="mb-2"><b>ATS Score:</b> {atsScore !== null ? atsScore : "-"}/100</div>
+        {scanResult ? (
+          <div className="mt-8 bg-white/80 rounded-2xl shadow-lg border border-blue-200 p-6 w-full max-w-lg animate-fadeIn relative">
+            <img src={studentBg} alt="background" className="absolute inset-0 w-full h-full object-cover object-center opacity-20 rounded-2xl -z-10" />
+            <h3 className="text-2xl font-bold text-blue-700 mb-4">Scan Result</h3>
+            {scanResult.name && <div className="mb-2"><b>Name:</b> {scanResult.name}</div>}
+            {scanResult.skills && scanResult.skills.length > 0 && (
+              <div className="mb-2"><b>Skillset:</b> {scanResult.skills.join(", ")}</div>
+            )}
+            {scanResult.cgpa && <div className="mb-2"><b>CGPA:</b> {scanResult.cgpa}</div>}
+            <div className="mt-4 text-xl font-bold text-blue-800">ATS Score: {atsScore !== null ? atsScore : "-"}/100</div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // Job Finder Page
-  const JobFinderPage = () => {
-    // Show 3-4 skill-matched jobs, rest random
-    let skillMatched = [];
-    let randomJobs = [];
-    if (scanResult && scanResult.skills && recommendedJobs.length > 0) {
-      skillMatched = recommendedJobs.slice(0, 4);
-      randomJobs = recommendedJobs.slice(4, 10);
-    }
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 mt-16">
-        <div className="w-full max-w-4xl glass-card p-8">
-          <h2 className="text-3xl font-bold text-blue-700 mb-6">Job Finder</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {skillMatched.map((job, idx) => (
-              <div key={idx} className="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow hover:scale-105 transition-transform cursor-pointer glass-card animate-fadeIn"
-                onClick={() => setModalJob(job)}>
-                <h3 className="text-xl font-semibold text-blue-800 mb-1">{job.title}</h3>
-                <div className="text-gray-700 mb-1">Company: <b>{job.company}</b></div>
-                <div className="text-gray-600 text-sm mb-2">Skills: {job.skills.join(", ")}</div>
-                <div className="text-gray-700 text-sm">Rounds: {job.rounds || "3+"}</div>
-                <div className="text-green-700 font-semibold">Salary: {job.salary || "Best in industry"}</div>
-                <button className="mt-3 px-4 py-2 glass-btn" onClick={e => {
-                  e.stopPropagation();
-                  setAppliedJobs(jobs => [...jobs, { ...job, appliedAt: new Date().toISOString() }]);
-                  setModalJob(null);
-                  alert("Applied to " + job.title + " at " + job.company);
-                }}>Apply</button>
-              </div>
-            ))}
-            {randomJobs.map((job, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-6 shadow">
-                <h3 className="text-xl font-semibold text-gray-800 mb-1">{job.title}</h3>
-                <div className="text-gray-700 mb-1">Company: <b>{job.company}</b></div>
-                <div className="text-gray-600 text-sm mb-2">Skills: {job.skills.join(", ")}</div>
-                <div className="text-gray-700 text-sm">Rounds: {job.rounds || "3+"}</div>
-                <div className="text-green-700 font-semibold">Salary: {job.salary || "Best in industry"}</div>
-                <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700" onClick={() => {
-                  setAppliedJobs(jobs => [...jobs, { ...job, appliedAt: new Date().toISOString() }]);
-                  alert("Applied to " + job.title + " at " + job.company);
-                }}>Apply</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Activities/Roadmap Page
-  const ActivitiesPage = () => (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 mt-16">
-      <div className="w-full max-w-3xl bg-white/95 rounded-2xl shadow-2xl p-8">
-        <h2 className="text-3xl font-bold text-blue-700 mb-6">My Placement Roadmap</h2>
-        {appliedJobs.length === 0 ? (
-          <div className="text-gray-500">You haven't applied to any jobs yet. Apply from the Job Finder page!</div>
         ) : (
-          <ol className="relative border-l-4 border-blue-400 ml-6">
-            {appliedJobs.map((job, idx) => (
-              <li key={idx} className="mb-8 ml-4">
-                <div className="absolute w-3 h-3 bg-blue-500 rounded-full -left-5 top-2 border-2 border-white"></div>
-                <div className="text-lg font-semibold text-blue-800">{job.title} @ {job.company}</div>
-                <div className="text-gray-700 text-sm">Applied: {new Date(job.appliedAt).toLocaleDateString()} | Rounds: {job.rounds || "3+"} | Salary: {job.salary || "Best in industry"}</div>
-              </li>
-            ))}
-          </ol>
+          <div className="mt-8 text-gray-500 text-center">No scan result yet. Please upload your resume.</div>
         )}
       </div>
     </div>
   );
+
+  const handleAddJob = (job) => {
+    setPostedJobs((prev) => [...prev, { ...job, postedAt: Date.now() }]);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-blue-300 to-cyan-100 flex flex-col">
       <Navbar user={user} />
-      <button
-        className="fixed top-5 right-6 z-50 glass-btn px-4 py-2 font-semibold text-base shadow-lg"
-        onClick={() => setDarkMode(dm => !dm)}
-        aria-label="Toggle dark mode"
-      >
-        {darkMode ? "🌙 Dark" : "☀️ Light"}
-      </button>
       <div className="flex-1 flex flex-col items-center justify-center">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/career-counselling" element={<CareerCounselling />} />
+          <Route path="/career-guidance" element={<CareerGuidance />} />
           <Route path="/resume-ats" element={<ResumeAtsPage />} />
-          <Route path="/job-finder" element={<>
-            <JobFinderPage />
-            <JobModal job={modalJob} onClose={() => setModalJob(null)} />
-          </>} />
-          <Route path="/activities" element={<ActivitiesPage />} />
+          <Route path="/job-finder" element={
+            <Suspense fallback={<div>Loading Job Finder...</div>}>
+              <JobFinderPage jobs={recommendedJobs} skillset={scanResult?.skills || []} appliedJobs={appliedJobs} setAppliedJobs={setAppliedJobs} user={user} />
+            </Suspense>
+          } />
+          <Route path="/activities" element={
+  <Suspense fallback={<div>Loading Activities...</div>}>
+    <StudentDashboard
+      user={user}
+      postedJobs={postedJobs}
+      scanResult={scanResult}
+      resumeHistory={resumeHistory}
+      appliedJobs={appliedJobs}
+    />
+  </Suspense>
+} />
+          <Route path="/employee-dashboard" element={<EmployeeDashboard user={user} postedJobs={postedJobs} setPostedJobs={setPostedJobs} />} />
+          <Route path="/jobs" element={user && user.role === 'employee' ? <EmployeeJobsPage onAddJob={handleAddJob} /> : <div className='text-center text-red-600 mt-12'>Unauthorized</div>} />
+          <Route path="/student-progress" element={user && user.role === 'employee' ? <StudentProgress pipelineSubmissions={pipelineSubmissions} setPipelineSubmissions={setPipelineSubmissions} /> : <div className='text-center text-red-600 mt-12'>Unauthorized</div>} />
+          <Route path="/exam" element={<ExamPage />} />
+          <Route path="/learning" element={<Learning />} />
+          <Route path="/code-compiler" element={<CodeCompiler />} />
+          <Route path="/learn" element={<LearnPlatform />} />
         </Routes>
       </div>
     </div>
