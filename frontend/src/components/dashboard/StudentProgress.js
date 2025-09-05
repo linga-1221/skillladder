@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import PieChart from "./PieChart";
+import { PieChart } from "./PieChart";
 
 // Mock exam data - replace with real API/localStorage as needed
 const EXAMS = [
@@ -67,7 +67,10 @@ export default function StudentProgress({ pipelineSubmissions, setPipelineSubmis
       <h2 className="text-3xl font-bold text-blue-800 mb-6">Student Progress</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl mb-10">
         {examStats.map(stat => (
-          <PieChart key={stat.name} total={stat.count} label={stat.name} />
+          <div key={stat.name} className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{stat.name}</h3>
+            <PieChart data={{ [stat.name]: stat.count }} />
+          </div>
         ))}
       </div>
       {/* Pending Approvals Section */}

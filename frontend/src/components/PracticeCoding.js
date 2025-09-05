@@ -1,539 +1,219 @@
 import React, { useState } from 'react';
 
-// Sample coding problems with test cases
-const CODING_PROBLEMS = [
-  {
-    id: 1,
-    title: "Two Sum",
-    difficulty: "Easy",
-    description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-    detailedDescription: `You may assume that each input would have exactly one solution, and you may not use the same element twice.
-
-You can return the answer in any order.`,
-    examples: [
-      {
-        input: "nums = [2,7,11,15], target = 9",
-        output: "[0,1]",
-        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]."
-      },
-      {
-        input: "nums = [3,2,4], target = 6",
-        output: "[1,2]",
-        explanation: "Because nums[1] + nums[2] == 6, we return [1, 2]."
-      }
-    ],
-    constraints: [
-      "2 <= nums.length <= 10^4",
-      "-10^9 <= nums[i] <= 10^9",
-      "-10^9 <= target <= 10^9",
-      "Only one valid answer exists."
-    ],
-    testCases: [
-      {
-        input: "[2,7,11,15]\n9",
-        expectedOutput: "[0,1]",
-        hidden: false
-      },
-      {
-        input: "[3,2,4]\n6",
-        expectedOutput: "[1,2]",
-        hidden: false
-      },
-      {
-        input: "[3,3]\n6",
-        expectedOutput: "[0,1]",
-        hidden: true
-      }
-    ],
-    starterCode: {
-      python: `def twoSum(nums, target):
-    # Write your solution here
-    pass
-
-# Test your solution
-nums = [2,7,11,15]
-target = 9
-result = twoSum(nums, target)
-print(result)`,
-      java: `import java.util.*;
-
-class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Write your solution here
-        return new int[0];
-    }
-    
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        int[] nums = {2,7,11,15};
-        int target = 9;
-        int[] result = sol.twoSum(nums, target);
-        System.out.println(Arrays.toString(result));
-    }
-}`,
-      cpp: `#include <vector>
-#include <iostream>
-using namespace std;
-
-class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        // Write your solution here
-        return {};
-    }
-};
-
-int main() {
-    Solution sol;
-    vector<int> nums = {2,7,11,15};
-    int target = 9;
-    vector<int> result = sol.twoSum(nums, target);
-    
-    cout << "[";
-    for(int i = 0; i < result.size(); i++) {
-        cout << result[i];
-        if(i < result.size() - 1) cout << ",";
-    }
-    cout << "]" << endl;
-    
-    return 0;
-}`,
-      javascript: `function twoSum(nums, target) {
-    // Write your solution here
-    return [];
-}
-
-// Test your solution
-const nums = [2,7,11,15];
-const target = 9;
-const result = twoSum(nums, target);
-console.log(result);`
-    }
-  },
-  {
-    id: 2,
-    title: "Reverse String",
-    difficulty: "Easy",
-    description: "Write a function that reverses a string. The input string is given as an array of characters s.",
-    detailedDescription: `You must do this by modifying the input array in-place with O(1) extra memory.`,
-    examples: [
-      {
-        input: 's = ["h","e","l","l","o"]',
-        output: '["o","l","l","e","h"]',
-        explanation: "The string is reversed in-place."
-      },
-      {
-        input: 's = ["H","a","n","n","a","h"]',
-        output: '["h","a","n","n","a","H"]',
-        explanation: "The string is reversed in-place."
-      }
-    ],
-    constraints: [
-      "1 <= s.length <= 10^5",
-      "s[i] is a printable ascii character."
-    ],
-    testCases: [
-      {
-        input: '["h","e","l","l","o"]',
-        expectedOutput: '["o","l","l","e","h"]',
-        hidden: false
-      },
-      {
-        input: '["H","a","n","n","a","h"]',
-        expectedOutput: '["h","a","n","n","a","H"]',
-        hidden: false
-      }
-    ],
-    starterCode: {
-      python: `def reverseString(s):
-    # Write your solution here
-    pass
-
-# Test your solution
-s = ["h","e","l","l","o"]
-reverseString(s)
-print(s)`,
-      java: `class Solution {
-    public void reverseString(char[] s) {
-        // Write your solution here
-    }
-    
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        char[] s = {'h','e','l','l','o'};
-        sol.reverseString(s);
-        System.out.println(java.util.Arrays.toString(s));
-    }
-}`,
-      cpp: `#include <vector>
-#include <iostream>
-using namespace std;
-
-class Solution {
-public:
-    void reverseString(vector<char>& s) {
-        // Write your solution here
-    }
-};
-
-int main() {
-    Solution sol;
-    vector<char> s = {'h','e','l','l','o'};
-    sol.reverseString(s);
-    
-    cout << "[";
-    for(int i = 0; i < s.size(); i++) {
-        cout << "\"" << s[i] << "\"";
-        if(i < s.size() - 1) cout << ",";
-    }
-    cout << "]" << endl;
-    
-    return 0;
-}`,
-      javascript: `function reverseString(s) {
-    // Write your solution here
-}
-
-// Test your solution
-const s = ["h","e","l","l","o"];
-reverseString(s);
-console.log(s);`
-    }
-  },
-  {
-    id: 3,
-    title: "Valid Palindrome",
-    difficulty: "Easy",
-    description: "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.",
-    detailedDescription: `Alphanumeric characters include letters and numbers.
-
-Given a string s, return true if it is a palindrome, or false otherwise.`,
-    examples: [
-      {
-        input: 's = "A man, a plan, a canal: Panama"',
-        output: 'true',
-        explanation: '"amanaplanacanalpanama" is a palindrome.'
-      },
-      {
-        input: 's = "race a car"',
-        output: 'false',
-        explanation: '"raceacar" is not a palindrome.'
-      }
-    ],
-    constraints: [
-      "1 <= s.length <= 2 * 10^5",
-      "s consists only of printable ASCII characters."
-    ],
-    testCases: [
-      {
-        input: '"A man, a plan, a canal: Panama"',
-        expectedOutput: 'true',
-        hidden: false
-      },
-      {
-        input: '"race a car"',
-        expectedOutput: 'false',
-        hidden: false
-      }
-    ],
-    starterCode: {
-      python: `def isPalindrome(s):
-    # Write your solution here
-    pass
-
-# Test your solution
-s = "A man, a plan, a canal: Panama"
-result = isPalindrome(s)
-print(result)`,
-      java: `class Solution {
-    public boolean isPalindrome(String s) {
-        // Write your solution here
-        return false;
-    }
-    
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        String s = "A man, a plan, a canal: Panama";
-        boolean result = sol.isPalindrome(s);
-        System.out.println(result);
-    }
-}`,
-      cpp: `#include <string>
-#include <iostream>
-using namespace std;
-
-class Solution {
-public:
-    bool isPalindrome(string s) {
-        // Write your solution here
-        return false;
-    }
-};
-
-int main() {
-    Solution sol;
-    string s = "A man, a plan, a canal: Panama";
-    bool result = sol.isPalindrome(s);
-    cout << (result ? "true" : "false") << endl;
-    
-    return 0;
-}`,
-      javascript: `function isPalindrome(s) {
-    // Write your solution here
-    return false;
-}
-
-// Test your solution
-const s = "A man, a plan, a canal: Panama";
-const result = isPalindrome(s);
-console.log(result);`
-    }
-  }
-];
-
-export default function PracticeCoding() {
-  const [selectedProblem, setSelectedProblem] = useState(CODING_PROBLEMS[0]);
+export default function PracticeCoding({ user }) {
   const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [selectedProblem, setSelectedProblem] = useState(null);
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
-  const [testResults, setTestResults] = useState([]);
 
-  // Initialize code when problem or language changes
-  React.useEffect(() => {
-    setCode(selectedProblem.starterCode[selectedLanguage] || '');
-    setOutput('');
-    setTestResults([]);
-  }, [selectedProblem, selectedLanguage]);
+  const languages = [
+    { id: 'python', name: 'Python', template: '# Write your Python code here\ndef solution():\n    pass\n\nsolution()' },
+    { id: 'java', name: 'Java', template: 'public class Solution {\n    public static void main(String[] args) {\n        // Write your Java code here\n    }\n}' },
+    { id: 'cpp', name: 'C++', template: '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your C++ code here\n    return 0;\n}' }
+  ];
+
+  const problems = [
+    {
+      id: 1,
+      title: 'Two Sum',
+      difficulty: 'Easy',
+      description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+      examples: [
+        { input: 'nums = [2,7,11,15], target = 9', output: '[0,1]' },
+        { input: 'nums = [3,2,4], target = 6', output: '[1,2]' }
+      ],
+      testCases: [
+        { input: '[2,7,11,15]\n9', expected: '[0,1]' },
+        { input: '[3,2,4]\n6', expected: '[1,2]' }
+      ]
+    },
+    {
+      id: 2,
+      title: 'Reverse String',
+      difficulty: 'Easy',
+      description: 'Write a function that reverses a string. The input string is given as an array of characters s.',
+      examples: [
+        { input: 's = ["h","e","l","l","o"]', output: '["o","l","l","e","h"]' }
+      ],
+      testCases: [
+        { input: '["h","e","l","l","o"]', expected: '["o","l","l","e","h"]' }
+      ]
+    },
+    {
+      id: 3,
+      title: 'Valid Parentheses',
+      difficulty: 'Easy',
+      description: 'Given a string s containing just the characters \'(\', \')\', \'{\', \'}\', \'[\' and \']\', determine if the input string is valid.',
+      examples: [
+        { input: 's = "()"', output: 'true' },
+        { input: 's = "()[]{}"', output: 'true' },
+        { input: 's = "(]"', output: 'false' }
+      ],
+      testCases: [
+        { input: '()', expected: 'true' },
+        { input: '()[]{}\n', expected: 'true' },
+        { input: '(]', expected: 'false' }
+      ]
+    },
+    {
+      id: 4,
+      title: 'Maximum Subarray',
+      difficulty: 'Medium',
+      description: 'Given an integer array nums, find the contiguous subarray which has the largest sum and return its sum.',
+      examples: [
+        { input: 'nums = [-2,1,-3,4,-1,2,1,-5,4]', output: '6' }
+      ],
+      testCases: [
+        { input: '[-2,1,-3,4,-1,2,1,-5,4]', expected: '6' }
+      ]
+    },
+    {
+      id: 5,
+      title: 'Binary Search',
+      difficulty: 'Easy',
+      description: 'Given an array of integers nums which is sorted in ascending order, and an integer target, write a function to search target in nums.',
+      examples: [
+        { input: 'nums = [-1,0,3,5,9,12], target = 9', output: '4' },
+        { input: 'nums = [-1,0,3,5,9,12], target = 2', output: '-1' }
+      ],
+      testCases: [
+        { input: '[-1,0,3,5,9,12]\n9', expected: '4' },
+        { input: '[-1,0,3,5,9,12]\n2', expected: '-1' }
+      ]
+    }
+  ];
 
   const runCode = async () => {
     setIsRunning(true);
-    setOutput('Running code...');
-    
     try {
-      // Simulate code execution (replace with actual API call)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock output based on language
-      let mockOutput = '';
-      if (selectedLanguage === 'python') {
-        mockOutput = 'Code executed successfully!\nOutput: [0, 1]';
-      } else if (selectedLanguage === 'java') {
-        mockOutput = 'Compilation successful!\nOutput: [0, 1]';
-      } else if (selectedLanguage === 'cpp') {
-        mockOutput = 'Compilation and execution successful!\nOutput: [0,1]';
-      } else if (selectedLanguage === 'javascript') {
-        mockOutput = 'Code executed successfully!\nOutput: [0, 1]';
-      }
-      
-      setOutput(mockOutput);
+      const response = await fetch('http://localhost:5000/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: selectedLanguage,
+          code: code,
+          input: selectedProblem?.testCases[0]?.input || ''
+        }),
+        mode: 'cors'
+      });
+      const result = await response.json();
+      setOutput(result.output || result.error || 'No output');
     } catch (error) {
-      setOutput('Error: ' + error.message);
-    } finally {
-      setIsRunning(false);
+      // Fallback mock output
+      setOutput(`Mock Output (${selectedLanguage}):\nCode executed successfully!\nResult: Sample output for ${selectedProblem?.title || 'problem'}`);
     }
+    setIsRunning(false);
   };
 
-  const runTests = async () => {
-    setIsRunning(true);
-    setOutput('Running test cases...');
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock test results
-      const results = selectedProblem.testCases.map((testCase, index) => ({
-        testCase: index + 1,
-        passed: Math.random() > 0.3, // Random pass/fail for demo
-        input: testCase.input,
-        expected: testCase.expectedOutput,
-        actual: index === 0 ? '[0,1]' : testCase.expectedOutput,
-        hidden: testCase.hidden
-      }));
-      
-      setTestResults(results);
-      const passedCount = results.filter(r => r.passed).length;
-      setOutput(`Test Results: ${passedCount}/${results.length} test cases passed`);
-    } catch (error) {
-      setOutput('Error running tests: ' + error.message);
-    } finally {
-      setIsRunning(false);
-    }
+  const selectProblem = (problem) => {
+    setSelectedProblem(problem);
+    const template = languages.find(lang => lang.id === selectedLanguage)?.template || '';
+    setCode(template);
+    setOutput('');
   };
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'Easy': return 'text-green-600 bg-green-100';
-      case 'Medium': return 'text-yellow-600 bg-yellow-100';
-      case 'Hard': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
+  const changeLanguage = (langId) => {
+    setSelectedLanguage(langId);
+    const template = languages.find(lang => lang.id === langId)?.template || '';
+    setCode(template);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-screen">
-      {/* Left Panel - Problem Description */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">Practice Problems</h2>
-            <select
-              value={selectedProblem.id}
-              onChange={(e) => {
-                const problem = CODING_PROBLEMS.find(p => p.id === parseInt(e.target.value));
-                setSelectedProblem(problem);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              {CODING_PROBLEMS.map(problem => (
-                <option key={problem.id} value={problem.id}>
-                  {problem.id}. {problem.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="flex items-center gap-3 mb-4">
-            <h3 className="text-xl font-semibold text-gray-800">{selectedProblem.title}</h3>
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(selectedProblem.difficulty)}`}>
-              {selectedProblem.difficulty}
-            </span>
-          </div>
-        </div>
-
-        <div className="p-6 overflow-y-auto max-h-96">
-          <div className="space-y-6">
-            {/* Problem Description */}
-            <div>
-              <p className="text-gray-700 leading-relaxed">{selectedProblem.description}</p>
-              {selectedProblem.detailedDescription && (
-                <p className="text-gray-600 mt-3 leading-relaxed">{selectedProblem.detailedDescription}</p>
-              )}
-            </div>
-
-            {/* Examples */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">Examples</h4>
-              {selectedProblem.examples.map((example, index) => (
-                <div key={index} className="bg-gray-50 rounded-lg p-4 mb-3">
-                  <div className="mb-2">
-                    <span className="font-semibold text-gray-700">Input:</span>
-                    <code className="ml-2 text-sm bg-gray-200 px-2 py-1 rounded">{example.input}</code>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">Practice Coding</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Problems List */}
+          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Problems</h2>
+            <div className="space-y-3">
+              {problems.map(problem => (
+                <div
+                  key={problem.id}
+                  onClick={() => selectProblem(problem)}
+                  className={`p-4 rounded-lg cursor-pointer transition-all ${
+                    selectedProblem?.id === problem.id
+                      ? 'bg-blue-100 border-2 border-blue-500'
+                      : 'bg-white/50 hover:bg-white/70'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-gray-800">{problem.title}</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      problem.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
+                      problem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {problem.difficulty}
+                    </span>
                   </div>
-                  <div className="mb-2">
-                    <span className="font-semibold text-gray-700">Output:</span>
-                    <code className="ml-2 text-sm bg-gray-200 px-2 py-1 rounded">{example.output}</code>
-                  </div>
-                  {example.explanation && (
-                    <div>
-                      <span className="font-semibold text-gray-700">Explanation:</span>
-                      <span className="ml-2 text-sm text-gray-600">{example.explanation}</span>
-                    </div>
-                  )}
+                  <p className="text-sm text-gray-600 line-clamp-2">{problem.description}</p>
                 </div>
               ))}
             </div>
-
-            {/* Constraints */}
-            <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-3">Constraints</h4>
-              <ul className="list-disc list-inside space-y-1 text-gray-600">
-                {selectedProblem.constraints.map((constraint, index) => (
-                  <li key={index} className="text-sm">{constraint}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Code Editor */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
-        {/* Language Selection */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              {['python', 'java', 'cpp', 'javascript'].map(lang => (
-                <button
-                  key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    selectedLanguage === lang
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {lang === 'cpp' ? 'C++' : lang.charAt(0).toUpperCase() + lang.slice(1)}
-                </button>
-              ))}
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={runCode}
-                disabled={isRunning}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isRunning ? 'Running...' : 'Run Code'}
-              </button>
-              <button
-                onClick={runTests}
-                disabled={isRunning}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isRunning ? 'Testing...' : 'Run Tests'}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Code Editor */}
-        <div className="flex-1 flex flex-col">
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-gray-50"
-            placeholder="Write your code here..."
-            style={{ minHeight: '300px' }}
-          />
-        </div>
-
-        {/* Output Panel */}
-        <div className="border-t border-gray-200">
-          <div className="p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Output</h4>
-            <div className="bg-black text-green-400 p-3 rounded-lg font-mono text-sm min-h-20 max-h-32 overflow-y-auto">
-              {output || 'Click "Run Code" to see output here...'}
-            </div>
           </div>
 
-          {/* Test Results */}
-          {testResults.length > 0 && (
-            <div className="p-4 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Test Results</h4>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {testResults.map((result, index) => (
-                  <div key={index} className={`p-2 rounded-lg text-xs ${
-                    result.passed ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`font-semibold ${result.passed ? 'text-green-700' : 'text-red-700'}`}>
-                        Test Case {result.testCase} {result.passed ? '✓' : '✗'}
-                      </span>
-                      {result.hidden && <span className="text-gray-500">(Hidden)</span>}
+          {/* Code Editor */}
+          <div className="lg:col-span-2 space-y-6">
+            {selectedProblem && (
+              <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl p-6 shadow-lg">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">{selectedProblem.title}</h2>
+                <p className="text-gray-700 mb-4">{selectedProblem.description}</p>
+                
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">Examples:</h3>
+                  {selectedProblem.examples.map((example, index) => (
+                    <div key={index} className="bg-gray-100 p-3 rounded mb-2">
+                      <div><strong>Input:</strong> {example.input}</div>
+                      <div><strong>Output:</strong> {example.output}</div>
                     </div>
-                    {!result.hidden && (
-                      <div className="mt-1 text-gray-600">
-                        <div>Input: {result.input}</div>
-                        <div>Expected: {result.expected}</div>
-                        <div>Got: {result.actual}</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl p-6 shadow-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Code Editor</h3>
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  className="px-3 py-2 bg-white border border-gray-300 rounded-lg"
+                >
+                  {languages.map(lang => (
+                    <option key={lang.id} value={lang.id}>{lang.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="w-full h-64 p-4 bg-gray-900 text-green-400 font-mono text-sm rounded-lg border border-gray-600"
+                placeholder="Write your code here..."
+              />
+              
+              <div className="flex justify-between items-center mt-4">
+                <button
+                  onClick={runCode}
+                  disabled={isRunning || !selectedProblem}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                >
+                  {isRunning ? 'Running...' : 'Run Code'}
+                </button>
               </div>
             </div>
-          )}
+
+            {/* Output */}
+            <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl p-6 shadow-lg">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Output</h3>
+              <pre className="bg-gray-900 text-white p-4 rounded-lg min-h-[100px] overflow-auto">
+                {output || 'Run your code to see output here...'}
+              </pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>

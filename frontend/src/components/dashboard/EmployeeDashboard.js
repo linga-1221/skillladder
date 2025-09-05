@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import JobPostForm from "./JobPostForm";
-import PieChart from "./PieChart";
+import { PieChart } from "./PieChart";
 import FunnelChart from "../FunnelChart";
 
-export default function EmployeeDashboard({ user, postedJobs, setPostedJobs }) {
+export default function EmployeeDashboard({ user, postedJobs, setPostedJobs }) { // Employee dashboard
   const [studentCount, setStudentCount] = useState(0);
 
   useEffect(() => {
@@ -55,7 +55,10 @@ export default function EmployeeDashboard({ user, postedJobs, setPostedJobs }) {
         <div className="mb-6 text-lg text-white/80">Welcome, <span className="font-semibold text-blue-100">{user.email}</span>!</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="mb-8 flex flex-col items-center">
-            <PieChart total={studentCount} label="Registered Students" />
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Registered Students</h3>
+              <PieChart data={{ "Registered Students": studentCount }} />
+            </div>
             {/* Analytics Section */}
             <div className="glass p-4 rounded-xl mt-6 w-full animate-fadeIn">
               <h3 className="text-lg font-bold text-blue-200 mb-2">Hiring Funnel</h3>

@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import light theme styles */
+@import './lightGlass.css';
+
 /* Add your global styles here */
 
 @keyframes glow {

@@ -4,7 +4,7 @@ import CompanyATS from "../CompanyATS";
 import ResumeScanCard from "../ResumeScanCard";
 import FunnelChart from "../FunnelChart";
 
-export default function StudentDashboard({ user, scanResult, onScan, jobSuggestions, careerGuidance, userHistorySection, postedJobs = [], resumeHistory = [], appliedJobs = [] }) {
+export default function StudentDashboard({ user, scanResult, onScan, jobSuggestions, careerGuidance, userHistorySection, postedJobs = [], resumeHistory = [], appliedJobs = [] }) { // Student dashboard
   // Exam/test state
   const [completedExams, setCompletedExams] = useState([]);
 
@@ -17,7 +17,7 @@ export default function StudentDashboard({ user, scanResult, onScan, jobSuggesti
 
   // Handle starting exam in new tab
   const handleStartExam = (job, jobIndex) => {
-    const examUrl = `/exam?company=${encodeURIComponent(job.company)}&jobTitle=${encodeURIComponent(job.jobTitle)}&userEmail=${encodeURIComponent(user.email)}&jobIndex=${jobIndex}`;
+    const examUrl = `/exam?company=${encodeURIComponent(job.company)}&jobTitle=${encodeURIComponent(job.jobTitle)}&userEmail=${encodeURIComponent(user.email)}&jobIndex=${jobIndex}&mode=aptitude_reasoning_30`;
     const examWindow = window.open(examUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     
     if (!examWindow) {

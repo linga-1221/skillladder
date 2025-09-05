@@ -54,6 +54,38 @@ const APTITUDE_QUESTIONS = [
   { q: "The sky is blue. True or False?", a: "True", type: "tf" },
   { q: "If 5x = 20, what is x?", a: "4", type: "short" },
   { q: "What is the average of 10, 20, 30, 40, 50?", a: "30", type: "short" },
+  { q: "A man buys 5 pens for ₹50. Cost per pen?", a: "10", type: "short" },
+  { q: "Simplify: 3/4 + 1/8", a: "7/8", type: "short" },
+  { q: "What is 15% of 200?", a: "30", type: "short" },
+  { q: "Ratio of 2:3 equals fraction?", a: "2/3", type: "short" },
+  { q: "Compound interest is interest on?", a: "principal and accumulated interest", type: "short" },
+  { q: "Speed = Distance/Time. If D=120km, T=3h, Speed?", a: "40", type: "short" },
+  { q: "Solve: 9^2 - 7^2", a: "32", type: "short" },
+  { q: "LCM of 6 and 8?", a: "24", type: "short" },
+  { q: "HCF of 18 and 24?", a: "6", type: "short" },
+];
+
+const REASONING_QUESTIONS = [
+  { q: "Find the odd one out: Apple, Banana, Carrot, Mango", a: "Carrot", type: "mcq", options: ["Apple", "Banana", "Carrot", "Mango"] },
+  { q: "If CAT is coded as DBU, then DOG is coded as?", a: "EPH", type: "short" },
+  { q: "Complete the series: A, C, F, J, O, ?", a: "U", type: "short" },
+  { q: "Which direction is opposite to South-East?", a: "North-West", type: "mcq", options: ["North-East", "North-West", "South-West", "South-East"] },
+  { q: "If all roses are flowers and some flowers are red, then some roses are red. True?", a: "Cannot be concluded", type: "mcq", options: ["True", "False", "Cannot be concluded", "None"] },
+  { q: "Arrange by height: P>Q, R<S, P<S, Who is tallest?", a: "S", type: "short" },
+  { q: "Mirror image of 'b' looks like?", a: "d", type: "short" },
+  { q: "If today is Monday, what day is 100 days later?", a: "Wednesday", type: "short" },
+  { q: "Which does not belong: Circle, Triangle, Square, Cube", a: "Cube", type: "mcq", options: ["Circle", "Triangle", "Square", "Cube"] },
+  { q: "If 2 means '+', 3 means '-', 4 means '×', then 8 4 2 3 2 = ?", a: "14", type: "short" },
+  { q: "Blood relation: A is B's mother, B is C's sister. A is to C?", a: "Grandmother or Mother (insufficient info)", type: "short" },
+  { q: "Statement: Some cats are dogs. Conclusion: Some dogs are cats.", a: "True", type: "mcq", options: ["True", "False"] },
+  { q: "Coding: If SUN = TVO, then MOON = ?", a: "NPP O", type: "short" },
+  { q: "Analogies: Hand:Glove :: Foot:?", a: "Sock", type: "short" },
+  { q: "Series: 1, 4, 9, 16, ?", a: "25", type: "short" },
+  { q: "Direction: Facing North, turn right, right, left. Now facing?", a: "South", type: "short" },
+  { q: "Odd one: Twitter, Facebook, Instagram, Chrome", a: "Chrome", type: "short" },
+  { q: "Complete: BA, DC, FE, HG, ?", a: "JI", type: "short" },
+  { q: "If ALL=27 and DOG=26, then CAT=?", a: "24", type: "short" },
+  { q: "Shadow of a pole at noon points?", a: "North or none (short)", type: "short" }
 ];
 
 const PROGRAMMING_QUESTIONS = [
@@ -76,6 +108,7 @@ export default function ProcturedExam() {
   const company = urlParams.get('company') || 'General';
   const jobTitle = urlParams.get('jobTitle') || 'Position';
   const userEmail = urlParams.get('userEmail') || '';
+  const mode = urlParams.get('mode') || '';
 
   // Permission states
   const [hasPermissions, setHasPermissions] = useState(false);
@@ -98,21 +131,26 @@ export default function ProcturedExam() {
 
   // Initialize company-specific questions
   useEffect(() => {
+    // Special mode: 30 mixed aptitude + reasoning questions
+    if (mode === 'aptitude_reasoning_30') {
+      const mixed = [...APTITUDE_QUESTIONS, ...REASONING_QUESTIONS];
+      const selected = getRandomQuestions(mixed, Math.min(30, mixed.length));
+      setQuestions(selected.map(q => ({ ...q, typeGroup: 'aptitude_reasoning' })));
+      return;
+    }
+
     let companyQs = [];
     if (company && COMPANY_QUESTIONS[company]) {
       companyQs = COMPANY_QUESTIONS[company];
     } else {
-      // Default questions if company not found
       companyQs = [
         ...APTITUDE_QUESTIONS.slice(0, 4),
         ...PROGRAMMING_QUESTIONS.slice(0, 4)
       ];
     }
-    
-    // Get 5 random questions from company-specific set
     const selectedQuestions = getRandomQuestions(companyQs, 5);
     setQuestions(selectedQuestions.map(q => ({ ...q, typeGroup: 'company' })));
-  }, [company]);
+  }, [company, mode]);
 
   // Timer effect
   useEffect(() => {
@@ -361,7 +399,7 @@ export default function ProcturedExam() {
       <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-gray-800">{company} Mock Test</h1>
+            <h1 className="text-xl font-bold text-gray-800">{mode === 'aptitude_reasoning_30' ? 'Aptitude & Reasoning Mock Test' : `${company} Mock Test`}</h1>
             <p className="text-sm text-gray-600">Question {currentQuestion + 1} of {questions.length}</p>
           </div>
           
@@ -380,6 +418,7 @@ export default function ProcturedExam() {
                 ref={videoRef}
                 autoPlay
                 muted
+                playsInline
                 className="w-32 h-24 bg-gray-200 rounded-lg object-cover border-2 border-blue-300 shadow-md"
               />
             </div>

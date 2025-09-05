@@ -1,226 +1,646 @@
-import React, { useState } from "react";
-import QuizSection from "./QuizSection";
-import ProgressBar from "./ProgressBar";
-import CodeRunner from "./CodeRunner";
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebase/config';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
-const LANGUAGES = [
-  {
-    name: "C Programming",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/19/C_Logo.png",
-    resources: [
-      { label: "CodeWithHarry", url: "https://www.youtube.com/playlist?list=PLu0W_9lII9agpFUAlPFe_VNSlXW5uE0YL" },
-      { label: "ProgrammingKnowledge", url: "https://www.youtube.com/playlist?list=PLS1QulWo1RIaUGP446_pWLgTZPiFizEMq" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=KJgsSFOSQv0" },
-      { label: "Jenny’s Lectures", url: "https://www.youtube.com/playlist?list=PLdo5W4Nhv31bEiyPaaH5V8g7KxmnmUr0e" },
-      { label: "Neso Academy", url: "https://www.youtube.com/playlist?list=PLBlnK6fEyqRjC2UujKJGU8ZyG9hS3Z1xZ" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "C++ Programming",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/18/ISO_C%2B%2B_Logo.svg",
-    resources: [
-      { label: "CodeWithHarry", url: "https://www.youtube.com/playlist?list=PLu0W_9lII9agKNOsNXoMpFcJ8JGoweL_F" },
-      { label: "The Cherno", url: "https://www.youtube.com/playlist?list=PLlrATfBNZ98dudnM48yfGUldqGD0S4FFb" },
-      { label: "ProgrammingKnowledge", url: "https://www.youtube.com/playlist?list=PLS1QulWo1RIb9WVQGJ_vh-RQusbZgO_As" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=vLnPwxZdW4Y" },
-      { label: "Geeky Shows", url: "https://www.youtube.com/playlist?list=PLbGui_ZYuhijgTACCzw6bXXgP1O0nMQyP" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Java",
-    logo: "https://upload.wikimedia.org/wikipedia/en/3/30/Java_programming_language_logo.svg",
-    resources: [
-      { label: "Telusko", url: "https://www.youtube.com/playlist?list=PLsyeobzWxl7poL9JTVyndKe62ieoN-MZ3" },
-      { label: "CodeWithHarry", url: "https://www.youtube.com/playlist?list=PLu0W_9lII9ahwFDuExCpPFHAK829Wto2O" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=grEKMHGYyns" },
-      { label: "ProgrammingKnowledge", url: "https://www.youtube.com/playlist?list=PLS1QulWo1RIYmaxcEqw5JhK3b-6rt-JkR" },
-      { label: "BroCode", url: "https://www.youtube.com/playlist?list=PLZPZq0r_RZOM0mCHmbEVjT_PUBGx3JjKr" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Python",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg",
-    resources: [
-      { label: "Telusko", url: "https://www.youtube.com/playlist?list=PLsyeobzWxl7rtw3YT7d0G9RQ0DtRMi4cR" },
-      { label: "CodeWithHarry", url: "https://www.youtube.com/playlist?list=PLu0W_9lII9ah7DDtYtflgwMwpT3xmjXY9" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=rfscVS0vtbw" },
-      { label: "ProgrammingKnowledge", url: "https://www.youtube.com/playlist?list=PLS1QulWo1RIb8nY0O0S68f_m4R8D45bma" },
-      { label: "Amigoscode", url: "https://www.youtube.com/playlist?list=PLwvrYc43l1Mxk2zCOcmGQ0bM3n1bw8Tz5" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Data Analytics",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Data_visualization_icon.png",
-    resources: [
-      { label: "Ken Jee", url: "https://www.youtube.com/playlist?list=PL2zq7klxX5ATMsmyRazei7ZXkP1GHt-vk" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=r-uOLxNrNk8" },
-      { label: "Alex The Analyst", url: "https://www.youtube.com/playlist?list=PLUaB-1hjhk8FE-JWJ6r0R8v2ZdD5A4NJd" },
-      { label: "Krish Naik", url: "https://www.youtube.com/playlist?list=PLZoTAELRMXVPB9dMaqgKV1pa4ZLlr4UHH" },
-      { label: "Luke Barousse", url: "https://www.youtube.com/playlist?list=PLVfyj7U8VQfR_iILR3dgsKxnfsZ1uLQeR" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Cyber Security",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cyber_Security_Icon.png",
-    resources: [
-      { label: "Simplilearn", url: "https://www.youtube.com/watch?v=inWWhr5tnEA" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=3Kq1MIfTWCE" },
-      { label: "NetworkChuck", url: "https://www.youtube.com/playlist?list=PLDQaRcbiSnqF5U8ffMgZzSdbMwl80r5n_" },
-      { label: "The Cyber Mentor", url: "https://www.youtube.com/playlist?list=PLBf0hzazHTGOepimcI8xVwqKk5zwt9aAy" },
-      { label: "HackerSploit", url: "https://www.youtube.com/playlist?list=PLBf0hzazHTGNcJm_gGbx6KJM_cjDcvxmv" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Machine Learning",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Machine_learning.png",
-    resources: [
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=7eh4d6sabA0" },
-      { label: "Krish Naik", url: "https://www.youtube.com/playlist?list=PLZoTAELRMXVNJkSgNFsU2XDY2LR2xE8mE" },
-      { label: "StatQuest", url: "https://www.youtube.com/playlist?list=PLblh5JKOoLUIcdlgu78MnlATeyx4cEVeR" },
-      { label: "Simplilearn", url: "https://www.youtube.com/watch?v=ukzFI9rgwfU" },
-      { label: "Codebasics", url: "https://www.youtube.com/playlist?list=PLeo1K3hjS3us_ELKYSj_Fth2tIEkdKXvV" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "DevOps",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/0/05/Devops-toolchain.svg",
-    resources: [
-      { label: "TechWorld with Nana", url: "https://www.youtube.com/playlist?list=PLy7NrYWoggjwPggqtFsI_zMAwvG0SqYCb" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=j5Zsa_eOXeY" },
-      { label: "KodeKloud", url: "https://www.youtube.com/playlist?list=PL2We04F3Y_43DRYQSKS6BZI3YTr3cOjr0" },
-      { label: "Simplilearn", url: "https://www.youtube.com/watch?v=lBfuK7iP0V4" },
-      { label: "edureka!", url: "https://www.youtube.com/playlist?list=PL9ooVrP1hQOFXZSuU2Ufs5ubtLb3JxItE" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Cloud Computing",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/e/e0/Cloud_computing_icon.svg",
-    resources: [
-      { label: "AWS", url: "https://www.youtube.com/playlist?list=PLhr1KZpdzukcOr_6j_zmSrvYnLUtgqsZz" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=2LaAJq1lB1Q" },
-      { label: "Simplilearn", url: "https://www.youtube.com/watch?v=2LaAJq1lB1Q" },
-      { label: "GCP", url: "https://www.youtube.com/playlist?list=PLIivdWyY5sqLVoXz3Fg3SX4M4MN1uH2A2" },
-      { label: "Azure Academy", url: "https://www.youtube.com/playlist?list=PLX-6jz4Hgu5wTyT9sXivwNxjqF1hZpJj_" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Quantum Computing",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/6/6a/Quantum_computing.png",
-    resources: [
-      { label: "Qiskit", url: "https://www.youtube.com/playlist?list=PLOFEBzvs-VvqRlTfj6oOoqGQtb7GpUiH6" },
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=JhHMJCUmq28" },
-      { label: "Microsoft Quantum", url: "https://www.youtube.com/playlist?list=PLlrxD0HtieHje-_287YJKhY8tDeSItwtg" },
-      { label: "IBM Quantum", url: "https://www.youtube.com/playlist?list=PLOFEBzvs-VvqRNRtVGbQ6S6A8IuJcR-6B" },
-      { label: "Quantum Computing India", url: "https://www.youtube.com/playlist?list=PLQHeap0RmkPjxsy8s4H5KUm_YzgGFZ5_N" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Artificial Intelligence (AI)",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/17/Artificial_Intelligence_logo_notext.svg",
-    resources: [
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=JMUxmLyrhSk" },
-      { label: "Simplilearn", url: "https://www.youtube.com/watch?v=7E-sdXI4LB0" },
-      { label: "Krish Naik", url: "https://www.youtube.com/playlist?list=PLZoTAELRMXVPuWyNRH9x1T9JklL1Bzn_x" },
-      { label: "edureka!", url: "https://www.youtube.com/playlist?list=PL9ooVrP1hQOFXZSuU2Ufs5ubtLb3JxItE" },
-      { label: "Tech With Tim", url: "https://www.youtube.com/playlist?list=PLzMcBGfZo4-nyLTlSRBvo0zjSnCnqjHYQ" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Internet of Things (IoT)",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Internet_of_Things.png",
-    resources: [
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=6wD4V0rvlDI" },
-      { label: "Simplilearn", url: "https://www.youtube.com/watch?v=G5t9Ssc1DTM" },
-      { label: "edureka!", url: "https://www.youtube.com/playlist?list=PL9ooVrP1hQOFRriYt3rJde7p4cpe_MSh7" },
-      { label: "TechGig", url: "https://www.youtube.com/playlist?list=PLK7VIJFUioUeJ6zjMCjRmh4JQtuI9q9Pa" },
-      { label: "ProgrammingKnowledge", url: "https://www.youtube.com/playlist?list=PLS1QulWo1RIYjKzv04pIhDU5Qqr3-v3td" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Web Development",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/6/61/HTML5_logo_and_wordmark.svg",
-    resources: [
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=nu_pCVPKzTk" },
-      { label: "CodeWithHarry", url: "https://www.youtube.com/playlist?list=PLu0W_9lII9ag1UuG1oJ9ZJts7vpHQ5uN" },
-      { label: "Traversy Media", url: "https://www.youtube.com/playlist?list=PLillGF-RfqbZ2ybcoD2OaabW2P7Ws8CWu" },
-      { label: "Programming with Mosh", url: "https://www.youtube.com/playlist?list=PLTjRvDozrdlyjm_n3a8EwzlhY8fZ1pPZM" },
-      { label: "The Net Ninja", url: "https://www.youtube.com/playlist?list=PL4cUxeGkcC9gcy9lrvMJ75z9maRw4byYp" }
-    ],
-    quizzes: []
-  },
-  {
-    name: "Full Stack Development",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/d/d9/Node.js_logo.svg",
-    resources: [
-      { label: "freeCodeCamp.org", url: "https://www.youtube.com/watch?v=nu_pCVPKzTk" },
-      { label: "CodeWithHarry", url: "https://www.youtube.com/playlist?list=PLu0W_9lII9aiWVaPu8QX8oCG1nGfKxGZA" },
-      { label: "The Net Ninja", url: "https://www.youtube.com/playlist?list=PL4cUxeGkcC9goXbgTDQ0n_4TBzOO0ocPR" },
-      { label: "Traversy Media", url: "https://www.youtube.com/playlist?list=PLillGF-RfqbbnEGy3ROiLWk7JMCuSyQtX" },
-      { label: "edureka!", url: "https://www.youtube.com/playlist?list=PL9ooVrP1hQOEo6HXrW5bH1l7JxYp3E-7c" }
-    ],
-    quizzes: []
-  }
-];
+export default function LearnPlatform({ user }) {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [userPreferences, setUserPreferences] = useState({
+    languages: [],
+    hoursPerWeek: '',
+    skillLevel: '',
+    learningGoals: []
+  });
+  const [learningPath, setLearningPath] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState(null);
 
-export default function LearnPlatform() {
-  const [selected, setSelected] = useState(0);
-  return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-2xl shadow-xl mt-8 mb-8">
-      <h2 className="text-3xl font-bold text-blue-700 mb-6 text-center">Learn Programming & Tech Stacks</h2>
-      <div className="flex flex-wrap gap-3 justify-center mb-6">
-        {LANGUAGES.map((lang, idx) => (
+  // Learning options
+  const programmingLanguages = [
+    { id: 'python', name: 'Python', icon: '🐍' },
+    { id: 'java', name: 'Java', icon: '☕' },
+    { id: 'javascript', name: 'JavaScript', icon: '📜' },
+    { id: 'cpp', name: 'C++', icon: '⚡' },
+    { id: 'csharp', name: 'C#', icon: '🎯' },
+    { id: 'php', name: 'PHP', icon: '🐘' },
+    { id: 'ruby', name: 'Ruby', icon: '💎' },
+    { id: 'swift', name: 'Swift', icon: '🍎' },
+    { id: 'kotlin', name: 'Kotlin', icon: '📱' },
+    { id: 'go', name: 'Go', icon: '🚀' },
+    { id: 'rust', name: 'Rust', icon: '🦀' },
+    { id: 'typescript', name: 'TypeScript', icon: '📘' }
+  ];
+
+  // YouTube channels for each programming language
+  const youtubeChannels = {
+    python: [
+      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "Python tutorials for beginners" },
+      { name: "Corey Schafer", url: "https://www.youtube.com/@coreyms", description: "In-depth Python programming" },
+      { name: "Tech With Tim", url: "https://www.youtube.com/@TechWithTim", description: "Python projects and tutorials" },
+      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "Complete Python course" },
+      { name: "CS Dojo", url: "https://www.youtube.com/@CSDojo", description: "Python for data science" }
+    ],
+    java: [
+      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "Java programming tutorials" },
+      { name: "Amigoscode", url: "https://www.youtube.com/@amigoscode", description: "Java Spring Boot tutorials" },
+      { name: "Coding with John", url: "https://www.youtube.com/@CodingWithJohn", description: "Java interview questions" },
+      { name: "Baeldung", url: "https://www.youtube.com/@baeldung", description: "Java Spring tutorials" },
+      { name: "Java Brains", url: "https://www.youtube.com/@javabrains", description: "Java EE and Spring" }
+    ],
+    javascript: [
+      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "JavaScript fundamentals" },
+      { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", description: "JavaScript projects" },
+      { name: "The Net Ninja", url: "https://www.youtube.com/@TheNetNinja", description: "Modern JavaScript" },
+      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "Complete JS course" },
+      { name: "Dev Ed", url: "https://www.youtube.com/@developedbyed", description: "JavaScript tutorials" }
+    ],
+    react: [
+      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "React fundamentals" },
+      { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", description: "React projects" },
+      { name: "The Net Ninja", url: "https://www.youtube.com/@TheNetNinja", description: "React hooks and context" },
+      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "React course" },
+      { name: "Dev Ed", url: "https://www.youtube.com/@developedbyed", description: "React tutorials" }
+    ],
+    node: [
+      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "Node.js backend" },
+      { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", description: "Node.js projects" },
+      { name: "The Net Ninja", url: "https://www.youtube.com/@TheNetNinja", description: "Node.js tutorials" },
+      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "Node.js course" },
+      { name: "Dev Ed", url: "https://www.youtube.com/@developedbyed", description: "Node.js backend" }
+    ]
+  };
+
+  const developmentAreas = [
+    { id: 'web', name: 'Web Development', icon: '🌐', description: 'Build websites and web applications' },
+    { id: 'mobile', name: 'Mobile Development', icon: '📱', description: 'Create iOS and Android apps' },
+    { id: 'desktop', name: 'Desktop Development', icon: '💻', description: 'Build desktop applications' },
+    { id: 'game', name: 'Game Development', icon: '🎮', description: 'Create video games' },
+    { id: 'ai', name: 'AI & Machine Learning', icon: '🤖', description: 'Work with artificial intelligence' },
+    { id: 'data', name: 'Data Science', icon: '📊', description: 'Analyze and visualize data' },
+    { id: 'devops', name: 'DevOps', icon: '⚙️', description: 'Deploy and maintain applications' },
+    { id: 'blockchain', name: 'Blockchain', icon: '⛓️', description: 'Build decentralized applications' }
+  ];
+
+  const timeOptions = [
+    { value: '1-2', label: '1-2 hours per week' },
+    { value: '3-5', label: '3-5 hours per week' },
+    { value: '6-10', label: '6-10 hours per week' },
+    { value: '10+', label: '10+ hours per week' }
+  ];
+
+  const skillLevels = [
+    { value: 'beginner', label: 'Beginner', description: 'New to programming' },
+    { value: 'intermediate', label: 'Intermediate', description: 'Some programming experience' },
+    { value: 'advanced', label: 'Advanced', description: 'Experienced programmer' }
+  ];
+
+  useEffect(() => {
+    loadUserPreferences();
+  }, [user]);
+
+  const loadUserPreferences = async () => {
+    try {
+      const userRef = doc(db, "users", user.email);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        if (userData.learningPreferences) {
+          setUserPreferences(userData.learningPreferences);
+          setCurrentStep(4); // Skip to learning path if preferences exist
+          generateLearningPath(userData.learningPreferences);
+        }
+      }
+    } catch (error) {
+      console.warn('Error loading user preferences from Firestore:', error);
+      // Continue with default state - user will go through the setup process
+      console.log('Continuing with default preferences state');
+    }
+  };
+
+  const handleLanguageToggle = (languageId) => {
+    console.log('Language toggle clicked:', languageId);
+    setUserPreferences(prev => {
+      const newLanguages = prev.languages.includes(languageId)
+        ? prev.languages.filter(id => id !== languageId)
+        : [...prev.languages, languageId];
+      console.log('Updated languages:', newLanguages);
+      return {
+        ...prev,
+        languages: newLanguages
+      };
+    });
+  };
+
+  const handleGoalToggle = (goalId) => {
+    console.log('Goal toggle clicked:', goalId);
+    setUserPreferences(prev => {
+      const newGoals = prev.learningGoals.includes(goalId)
+        ? prev.learningGoals.filter(id => id !== goalId)
+        : [...prev.learningGoals, goalId];
+      console.log('Updated learning goals:', newGoals);
+      return {
+        ...prev,
+        learningGoals: newGoals
+      };
+    });
+  };
+
+  const generateLearningPath = (preferences) => {
+    console.log('Generating learning path for preferences:', preferences);
+    
+    const path = {
+      languages: preferences.languages.map(langId => 
+        programmingLanguages.find(lang => lang.id === langId)
+      ).filter(Boolean), // Remove any undefined values
+      areas: preferences.learningGoals.map(goalId => 
+        developmentAreas.find(area => area.id === goalId)
+      ).filter(Boolean), // Remove any undefined values
+      weeklyHours: preferences.hoursPerWeek,
+      skillLevel: preferences.skillLevel,
+      courses: [],
+      timeline: '12 weeks',
+      estimatedCompletion: new Date(Date.now() + 12 * 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
+    };
+
+    // Generate course recommendations based on preferences
+    path.courses = generateCourses(preferences);
+    console.log('Generated learning path:', path);
+    setLearningPath(path);
+  };
+
+  const generateCourses = (preferences) => {
+    const courses = [];
+    
+    if (preferences.languages && preferences.languages.length > 0) {
+      preferences.languages.forEach(langId => {
+        const language = programmingLanguages.find(lang => lang.id === langId);
+        if (language) {
+          courses.push({
+            id: `course-${langId}`,
+            title: `Learn ${language.name}`,
+            description: `Master ${language.name} programming fundamentals`,
+            duration: '4 weeks',
+            difficulty: 'Beginner', // Default difficulty
+            type: 'video',
+            progress: 0
+          });
+        }
+      });
+    }
+
+    if (preferences.learningGoals && preferences.learningGoals.length > 0) {
+      preferences.learningGoals.forEach(goalId => {
+        const area = developmentAreas.find(area => area.id === goalId);
+        if (area) {
+          courses.push({
+            id: `course-${goalId}`,
+            title: `${area.name} Fundamentals`,
+            description: area.description,
+            duration: '6 weeks',
+            difficulty: 'Intermediate',
+            type: 'project-based',
+            progress: 0
+          });
+        }
+      });
+    }
+
+    console.log('Generated courses:', courses);
+    return courses;
+  };
+
+  const handleNext = async () => {
+    console.log('handleNext called, currentStep:', currentStep);
+    console.log('userPreferences:', userPreferences);
+    
+    if (currentStep === 3) {
+      setLoading(true);
+      
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('Learning path generation timeout reached, using fallback');
+        setLoading(false);
+        
+        // Generate learning path locally as fallback
+        generateLearningPath(userPreferences);
+        setCurrentStep(4);
+        
+        alert('Learning path generated! Using local processing due to server timeout.');
+      }, 10000); // 10 second timeout
+      
+      try {
+        console.log('Saving preferences to Firestore...');
+        // Try to save preferences to Firestore
+        try {
+          const userRef = doc(db, "users", user.email);
+          await updateDoc(userRef, {
+            learningPreferences: userPreferences
+          });
+          console.log('Preferences saved successfully to Firestore');
+        } catch (firestoreError) {
+          console.warn('Firestore save failed, but continuing with local generation:', firestoreError);
+          // Continue without saving to Firestore
+        }
+
+        clearTimeout(timeoutId); // Clear timeout if successful
+        
+        // Generate learning path locally
+        console.log('Generating learning path...');
+        generateLearningPath(userPreferences);
+        setCurrentStep(4);
+        console.log('Moved to step 4');
+      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on error
+        console.error('Error in handleNext:', error);
+        // Fallback: Generate learning path even if save fails
+        console.log('Using fallback: generating learning path without saving');
+        generateLearningPath(userPreferences);
+        setCurrentStep(4);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      console.log('Moving to next step:', currentStep + 1);
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep(prev => prev - 1);
+  };
+
+  const renderStep1 = () => (
+    <div className="text-center">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">What programming languages interest you?</h2>
+      <p className="text-gray-600 mb-8">Select the languages you'd like to learn (you can choose multiple)</p>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {programmingLanguages.map((language) => (
           <button
-            key={lang.name}
-            onClick={() => setSelected(idx)}
-            className={`px-4 py-2 rounded-lg shadow text-base font-semibold flex items-center gap-2 border-2 transition-all ${selected === idx ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+            key={language.id}
+            onClick={() => handleLanguageToggle(language.id)}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 ${
+              userPreferences.languages.includes(language.id)
+                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                : 'border-gray-200 bg-white/20 hover:border-blue-300'
+            }`}
           >
-            <img src={lang.logo} alt={lang.name} className="w-6 h-6" />
-            {lang.name}
+            <div className="text-3xl mb-2">{language.icon}</div>
+            <div className="font-semibold text-gray-800">{language.name}</div>
           </button>
         ))}
       </div>
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center animate-fadeIn">
-        <img src={LANGUAGES[selected].logo} alt={LANGUAGES[selected].name} className="w-16 h-16 mx-auto mb-2" />
-        <h3 className="text-2xl font-bold mb-2 text-blue-800">{LANGUAGES[selected].name}</h3>
-        <p className="mb-3 text-gray-700">{LANGUAGES[selected].description}</p>
-        <div className="flex flex-col gap-2 items-center">
-          {LANGUAGES[selected].resources.map((res, i) => (
-            <a key={i} href={res.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-lg">{res.label}</a>
-          ))}
-        </div>
-        {/* Video Tutorials */}
-        {LANGUAGES[selected].videos && (
-          <div className="mt-4">
-            <h4 className="text-lg font-semibold mb-2 text-blue-700">Video Tutorials</h4>
-            {LANGUAGES[selected].videos.map((vid, i) => (
-              <a key={i} href={vid.url} target="_blank" rel="noopener noreferrer" className="text-purple-700 hover:underline block mb-1">{vid.label}</a>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="text-center">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">What development areas interest you?</h2>
+      <p className="text-gray-600 mb-8">Choose the areas you want to specialize in</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {developmentAreas.map((area) => (
+          <button
+            key={area.id}
+            onClick={() => handleGoalToggle(area.id)}
+            className={`p-6 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 text-left ${
+              userPreferences.learningGoals.includes(area.id)
+                ? 'border-purple-500 bg-purple-50 shadow-lg'
+                : 'border-gray-200 bg-white/20 hover:border-purple-300'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">{area.icon}</span>
+              <div>
+                <div className="font-semibold text-gray-800">{area.name}</div>
+                <div className="text-sm text-gray-600">{area.description}</div>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderStep3 = () => (
+    <div className="text-center">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Tell us about your learning preferences</h2>
+      
+      <div className="max-w-2xl mx-auto space-y-8">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">How much time can you dedicate per week?</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {timeOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  console.log('Time option selected:', option.value);
+                  setUserPreferences(prev => ({ ...prev, hoursPerWeek: option.value }));
+                }}
+                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  userPreferences.hoursPerWeek === option.value
+                    ? 'border-emerald-500 bg-emerald-50 shadow-lg'
+                    : 'border-gray-200 bg-white/20 hover:border-emerald-300'
+                }`}
+              >
+                {option.label}
+              </button>
             ))}
           </div>
-        )}
-        {/* Quiz Section */}
-        {LANGUAGES[selected].quizzes && (
-          <QuizSection quiz={LANGUAGES[selected].quizzes} />
-        )}
-        {/* Code Compiler Integration */}
-        <div className="mt-6">
-          <h4 className="text-lg font-semibold mb-2 text-blue-700">Try {LANGUAGES[selected].name} Code</h4>
-          <CodeRunner lang={LANGUAGES[selected].name.toLowerCase().includes('python') ? 'python' : LANGUAGES[selected].name.toLowerCase().includes('java') ? 'java' : LANGUAGES[selected].name.toLowerCase().includes('c++') ? 'cpp' : LANGUAGES[selected].name.toLowerCase().includes('go') ? 'go' : LANGUAGES[selected].name.toLowerCase().includes('node') ? 'javascript' : 'python'} />
         </div>
-        {/* Progress Tracking */}
-        <ProgressBar language={LANGUAGES[selected].name} />
+
+        <div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">What's your current skill level?</h3>
+          <div className="space-y-3">
+            {skillLevels.map((level) => (
+              <button
+                key={level.value}
+                onClick={() => {
+                  console.log('Skill level selected:', level.value);
+                  setUserPreferences(prev => ({ ...prev, skillLevel: level.value }));
+                }}
+                className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left ${
+                  userPreferences.skillLevel === level.value
+                    ? 'border-orange-500 bg-orange-50 shadow-lg'
+                    : 'border-gray-200 bg-white/20 hover:border-orange-300'
+                }`}
+              >
+                <div className="font-semibold text-gray-800">{level.label}</div>
+                <div className="text-sm text-gray-600">{level.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+    </div>
+  );
+
+  const renderStep4 = () => (
+    <div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Your Personalized Learning Path</h2>
+      
+      {learningPath && (
+        <div className="space-y-8">
+          {/* Overview */}
+          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Learning Overview</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{learningPath.courses.length}</div>
+                <div className="text-gray-600">Courses</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-emerald-600">{learningPath.timeline}</div>
+                <div className="text-gray-600">Timeline</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{learningPath.weeklyHours} hrs/week</div>
+                <div className="text-gray-600">Study Time</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Languages */}
+          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Languages to Learn</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {learningPath.languages.map((language) => (
+                <div key={language.id} className="text-center p-4 bg-white/10 rounded-xl">
+                  <div className="text-3xl mb-2">{language.icon}</div>
+                  <div className="font-semibold text-gray-800">{language.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Development Areas */}
+          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Development Areas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {learningPath.areas.map((area) => (
+                <div key={area.id} className="flex items-center space-x-3 p-4 bg-white/10 rounded-xl">
+                  <span className="text-2xl">{area.icon}</span>
+                  <div>
+                    <div className="font-semibold text-gray-800">{area.name}</div>
+                    <div className="text-sm text-gray-600">{area.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Course Recommendations */}
+          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Recommended Courses</h3>
+            <div className="space-y-4">
+              {learningPath.courses.map((course) => (
+                <div key={course.id} className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-800">{course.title}</div>
+                      <div className="text-sm text-gray-600">{course.description}</div>
+                      <div className="text-xs text-gray-500">{course.duration}</div>
+                    </div>
+                  </div>
+                  <button 
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300"
+                    onClick={() => showYouTubeChannels(course)}
+                  >
+                    Start Course
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Estimated Completion */}
+          <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-2xl p-6 border border-purple-500/30">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Timeline</h3>
+            <div className="text-center">
+              <p className="text-gray-700 mb-2">
+                Estimated completion date: <span className="font-semibold">{learningPath.estimatedCompletion}</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                Based on {learningPath.weeklyHours} hours per week of dedicated study time
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const showYouTubeChannels = (course) => {
+    setSelectedCourse(course);
+    setShowYouTubeModal(true);
+  };
+
+  const openYouTubeChannel = (url) => {
+    window.open(url, '_blank');
+  };
+
+  const closeYouTubeModal = () => {
+    setShowYouTubeModal(false);
+    setSelectedCourse(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4 animate-text-glow">
+            Learn Platform
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Get personalized learning recommendations based on your goals
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-gray-700">Step {currentStep} of 4</span>
+            <span className="text-sm text-gray-600">{Math.round((currentStep / 4) * 100)}% Complete</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${(currentStep / 4) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-8 shadow-lg mb-8 animate-fade-in-scale">
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+          {currentStep === 4 && renderStep4()}
+        </div>
+
+        {/* Navigation */}
+        {currentStep < 4 && (
+          <div className="flex justify-between">
+            <button
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className="px-6 py-3 bg-white/20 text-gray-700 rounded-lg hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={
+                (() => {
+                  const step1Disabled = currentStep === 1 && userPreferences.languages.length === 0;
+                  const step2Disabled = currentStep === 2 && userPreferences.learningGoals.length === 0;
+                  const step3Disabled = currentStep === 3 && (!userPreferences.hoursPerWeek || !userPreferences.skillLevel);
+                  
+                  console.log('Button validation:', {
+                    currentStep,
+                    step1Disabled,
+                    step2Disabled,
+                    step3Disabled,
+                    languages: userPreferences.languages,
+                    learningGoals: userPreferences.learningGoals,
+                    hoursPerWeek: userPreferences.hoursPerWeek,
+                    skillLevel: userPreferences.skillLevel
+                  });
+                  
+                  return step1Disabled || step2Disabled || step3Disabled;
+                })()
+              }
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Generating...</span>
+                </div>
+              ) : (
+                currentStep === 3 ? 'Generate Learning Path' : 'Next'
+              )}
+            </button>
+          </div>
+        )}
+        
+        {/* Status Indicator for Learning Path Generation */}
+        {loading && (
+          <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+              <span className="text-blue-700 font-medium">Generating your personalized learning path...</span>
+            </div>
+            <p className="text-sm text-blue-600 mt-2 text-center">
+              This may take a few moments. If it takes too long, we'll use local processing.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* YouTube Channels Modal */}
+      {showYouTubeModal && selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fadeIn">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 animate-slideUp">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-800">🎥 Top YouTube Channels for {selectedCourse.title}</h3>
+              <button 
+                onClick={closeYouTubeModal}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {(() => {
+                const languageId = selectedCourse.id.split('-')[1];
+                const channels = youtubeChannels[languageId] || [];
+                
+                if (channels.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600">No YouTube channels found for this course.</p>
+                    </div>
+                  );
+                }
+                
+                return channels.map((channel, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-800 text-lg">{channel.name}</h4>
+                        <p className="text-gray-600 text-sm">{channel.description}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => openYouTubeChannel(channel.url)}
+                      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                    >
+                      Start Class
+                    </button>
+                  </div>
+                ));
+              })()}
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Click "Start Class" to open the YouTube channel in a new tab
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

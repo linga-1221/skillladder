@@ -4,9 +4,6 @@ python-multipart
 pydantic
 python-dotenv
 openai
-pdfplumber
-pytesseract
-Pillow
-scikit-learn
-nltk
+PyPDF2
 firebase-admin
+flask
