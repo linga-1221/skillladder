@@ -1,16 +1,83 @@
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pydantic import BaseModel
-from typing import Optional
-import json
+from typing import Optional, List, Dict, Any
 import os
-import hashlib
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
 import uvicorn
 
-app = FastAPI()
+# Import routers
+from routers import auth, jobs
 
-USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+# Load environment variables
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+# Security
+SECRET_KEY = os.getenv("SUPABASE_JWT_SECRET", "your-secret-key-here")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+
+# Initialize FastAPI
+app = FastAPI(title="Job Portal API", version="1.0.0")
+
+# Include routers
+app.include_router(auth.router)
+app.include_router(jobs.router)
+
+# Security utils
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    # Here you would typically fetch the user from your database
+    # For now, we'll return a mock user
+    return {"email": email, "id": "user123", "user_type": "job_seeker"}
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# For backward compatibility with existing code
+supabase = None  # This will be initialized only if needed
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -546,5 +613,71 @@ async def chatbot_json(request: Request):
     # TODO: Integrate chatbot logic here
     return {"answer": f"You asked: {question}. This is a placeholder answer."}
 
+# Test endpoint to verify Supabase connection
+@app.get("/test-db")
+async def test_db():
+    try:
+        # Try to fetch the first user (if any)
+        result = supabase.table('users').select('*').limit(1).execute()
+        return {
+            "status": "success",
+            "message": "Successfully connected to Supabase!",
+            "data": result.data
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error connecting to Supabase: {str(e)}"
+        )
+
+@app.post("/test-data")
+async def create_test_data():
+    try:
+        # Test user data
+        user_data = {
+            "email": "test@example.com",
+            "password_hash": hash_password("testpassword123"),
+            "user_type": "job_seeker",
+            "full_name": "Test User"
+        }
+        
+        # Insert user
+        user = supabase.table('users').insert(user_data).execute()
+        user_id = user.data[0]['id'] if user.data else None
+        
+        if not user_id:
+            return {"status": "error", "message": "Failed to create test user"}
+        
+        # Test job data
+        job_data = {
+            "title": "Software Developer",
+            "description": "Looking for a skilled software developer...",
+            "company": "Tech Corp",
+            "location": "Remote",
+            "salary_range": "$80,000 - $120,000",
+            "job_type": "Full-time",
+            "skills": ["Python", "JavaScript", "React"],
+            "posted_by": user_id,
+            "status": "active"
+        }
+        
+        # Insert job
+        job = supabase.table('jobs').insert(job_data).execute()
+        job_id = job.data[0]['id'] if job.data else None
+        
+        return {
+            "status": "success",
+            "message": "Test data created successfully",
+            "user_id": user_id,
+            "job_id": job_id
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Job Portal API"}
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
