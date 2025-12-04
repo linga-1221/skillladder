@@ -1,646 +1,341 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase/config';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
 
 export default function LearnPlatform({ user }) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [userPreferences, setUserPreferences] = useState({
-    languages: [],
-    hoursPerWeek: '',
-    skillLevel: '',
-    learningGoals: []
-  });
   const [learningPath, setLearningPath] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [preferences, setPreferences] = useState({
+    target_role: 'Full Stack Developer',
+    experience: 'beginner',
+    skills: []
+  });
+  const [completedSkills, setCompletedSkills] = useState(new Set());
 
-  // Learning options
-  const programmingLanguages = [
-    { id: 'python', name: 'Python', icon: '🐍' },
-    { id: 'java', name: 'Java', icon: '☕' },
-    { id: 'javascript', name: 'JavaScript', icon: '📜' },
-    { id: 'cpp', name: 'C++', icon: '⚡' },
-    { id: 'csharp', name: 'C#', icon: '🎯' },
-    { id: 'php', name: 'PHP', icon: '🐘' },
-    { id: 'ruby', name: 'Ruby', icon: '💎' },
-    { id: 'swift', name: 'Swift', icon: '🍎' },
-    { id: 'kotlin', name: 'Kotlin', icon: '📱' },
-    { id: 'go', name: 'Go', icon: '🚀' },
-    { id: 'rust', name: 'Rust', icon: '🦀' },
-    { id: 'typescript', name: 'TypeScript', icon: '📘' }
+  const targetRoles = [
+    'Full Stack Developer',
+    'Data Scientist',
+    'DevOps Engineer',
+    'Mobile Developer',
+    'Machine Learning Engineer',
+    'Frontend Developer',
+    'Backend Developer',
+    'Cloud Architect'
   ];
 
-  // YouTube channels for each programming language
-  const youtubeChannels = {
-    python: [
-      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "Python tutorials for beginners" },
-      { name: "Corey Schafer", url: "https://www.youtube.com/@coreyms", description: "In-depth Python programming" },
-      { name: "Tech With Tim", url: "https://www.youtube.com/@TechWithTim", description: "Python projects and tutorials" },
-      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "Complete Python course" },
-      { name: "CS Dojo", url: "https://www.youtube.com/@CSDojo", description: "Python for data science" }
-    ],
-    java: [
-      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "Java programming tutorials" },
-      { name: "Amigoscode", url: "https://www.youtube.com/@amigoscode", description: "Java Spring Boot tutorials" },
-      { name: "Coding with John", url: "https://www.youtube.com/@CodingWithJohn", description: "Java interview questions" },
-      { name: "Baeldung", url: "https://www.youtube.com/@baeldung", description: "Java Spring tutorials" },
-      { name: "Java Brains", url: "https://www.youtube.com/@javabrains", description: "Java EE and Spring" }
-    ],
-    javascript: [
-      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "JavaScript fundamentals" },
-      { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", description: "JavaScript projects" },
-      { name: "The Net Ninja", url: "https://www.youtube.com/@TheNetNinja", description: "Modern JavaScript" },
-      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "Complete JS course" },
-      { name: "Dev Ed", url: "https://www.youtube.com/@developedbyed", description: "JavaScript tutorials" }
-    ],
-    react: [
-      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "React fundamentals" },
-      { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", description: "React projects" },
-      { name: "The Net Ninja", url: "https://www.youtube.com/@TheNetNinja", description: "React hooks and context" },
-      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "React course" },
-      { name: "Dev Ed", url: "https://www.youtube.com/@developedbyed", description: "React tutorials" }
-    ],
-    node: [
-      { name: "Programming with Mosh", url: "https://www.youtube.com/@programmingwithmosh", description: "Node.js backend" },
-      { name: "Traversy Media", url: "https://www.youtube.com/@TraversyMedia", description: "Node.js projects" },
-      { name: "The Net Ninja", url: "https://www.youtube.com/@TheNetNinja", description: "Node.js tutorials" },
-      { name: "freeCodeCamp", url: "https://www.youtube.com/@freecodecamp", description: "Node.js course" },
-      { name: "Dev Ed", url: "https://www.youtube.com/@developedbyed", description: "Node.js backend" }
-    ]
-  };
-
-  const developmentAreas = [
-    { id: 'web', name: 'Web Development', icon: '🌐', description: 'Build websites and web applications' },
-    { id: 'mobile', name: 'Mobile Development', icon: '📱', description: 'Create iOS and Android apps' },
-    { id: 'desktop', name: 'Desktop Development', icon: '💻', description: 'Build desktop applications' },
-    { id: 'game', name: 'Game Development', icon: '🎮', description: 'Create video games' },
-    { id: 'ai', name: 'AI & Machine Learning', icon: '🤖', description: 'Work with artificial intelligence' },
-    { id: 'data', name: 'Data Science', icon: '📊', description: 'Analyze and visualize data' },
-    { id: 'devops', name: 'DevOps', icon: '⚙️', description: 'Deploy and maintain applications' },
-    { id: 'blockchain', name: 'Blockchain', icon: '⛓️', description: 'Build decentralized applications' }
+  const experienceLevels = [
+    { value: 'beginner', label: 'Beginner (0-1 years)' },
+    { value: 'intermediate', label: 'Intermediate (1-3 years)' },
+    { value: 'advanced', label: 'Advanced (3+ years)' }
   ];
 
-  const timeOptions = [
-    { value: '1-2', label: '1-2 hours per week' },
-    { value: '3-5', label: '3-5 hours per week' },
-    { value: '6-10', label: '6-10 hours per week' },
-    { value: '10+', label: '10+ hours per week' }
-  ];
-
-  const skillLevels = [
-    { value: 'beginner', label: 'Beginner', description: 'New to programming' },
-    { value: 'intermediate', label: 'Intermediate', description: 'Some programming experience' },
-    { value: 'advanced', label: 'Advanced', description: 'Experienced programmer' }
-  ];
-
-  useEffect(() => {
-    loadUserPreferences();
-  }, [user]);
-
-  const loadUserPreferences = async () => {
+  const generateLearningPath = async () => {
+    setLoading(true);
     try {
-      const userRef = doc(db, "users", user.email);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        if (userData.learningPreferences) {
-          setUserPreferences(userData.learningPreferences);
-          setCurrentStep(4); // Skip to learning path if preferences exist
-          generateLearningPath(userData.learningPreferences);
-        }
+      const response = await fetch('http://localhost:8000/generate_learning_path/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preferences)
+      });
+
+      const data = await response.json();
+      if (data.learning_path) {
+        setLearningPath(data);
       }
     } catch (error) {
-      console.warn('Error loading user preferences from Firestore:', error);
-      // Continue with default state - user will go through the setup process
-      console.log('Continuing with default preferences state');
+      console.error('Failed to generate learning path:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLanguageToggle = (languageId) => {
-    console.log('Language toggle clicked:', languageId);
-    setUserPreferences(prev => {
-      const newLanguages = prev.languages.includes(languageId)
-        ? prev.languages.filter(id => id !== languageId)
-        : [...prev.languages, languageId];
-      console.log('Updated languages:', newLanguages);
-      return {
-        ...prev,
-        languages: newLanguages
-      };
-    });
-  };
-
-  const handleGoalToggle = (goalId) => {
-    console.log('Goal toggle clicked:', goalId);
-    setUserPreferences(prev => {
-      const newGoals = prev.learningGoals.includes(goalId)
-        ? prev.learningGoals.filter(id => id !== goalId)
-        : [...prev.learningGoals, goalId];
-      console.log('Updated learning goals:', newGoals);
-      return {
-        ...prev,
-        learningGoals: newGoals
-      };
-    });
-  };
-
-  const generateLearningPath = (preferences) => {
-    console.log('Generating learning path for preferences:', preferences);
-    
-    const path = {
-      languages: preferences.languages.map(langId => 
-        programmingLanguages.find(lang => lang.id === langId)
-      ).filter(Boolean), // Remove any undefined values
-      areas: preferences.learningGoals.map(goalId => 
-        developmentAreas.find(area => area.id === goalId)
-      ).filter(Boolean), // Remove any undefined values
-      weeklyHours: preferences.hoursPerWeek,
-      skillLevel: preferences.skillLevel,
-      courses: [],
-      timeline: '12 weeks',
-      estimatedCompletion: new Date(Date.now() + 12 * 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
-    };
-
-    // Generate course recommendations based on preferences
-    path.courses = generateCourses(preferences);
-    console.log('Generated learning path:', path);
-    setLearningPath(path);
-  };
-
-  const generateCourses = (preferences) => {
-    const courses = [];
-    
-    if (preferences.languages && preferences.languages.length > 0) {
-      preferences.languages.forEach(langId => {
-        const language = programmingLanguages.find(lang => lang.id === langId);
-        if (language) {
-          courses.push({
-            id: `course-${langId}`,
-            title: `Learn ${language.name}`,
-            description: `Master ${language.name} programming fundamentals`,
-            duration: '4 weeks',
-            difficulty: 'Beginner', // Default difficulty
-            type: 'video',
-            progress: 0
-          });
-        }
-      });
-    }
-
-    if (preferences.learningGoals && preferences.learningGoals.length > 0) {
-      preferences.learningGoals.forEach(goalId => {
-        const area = developmentAreas.find(area => area.id === goalId);
-        if (area) {
-          courses.push({
-            id: `course-${goalId}`,
-            title: `${area.name} Fundamentals`,
-            description: area.description,
-            duration: '6 weeks',
-            difficulty: 'Intermediate',
-            type: 'project-based',
-            progress: 0
-          });
-        }
-      });
-    }
-
-    console.log('Generated courses:', courses);
-    return courses;
-  };
-
-  const handleNext = async () => {
-    console.log('handleNext called, currentStep:', currentStep);
-    console.log('userPreferences:', userPreferences);
-    
-    if (currentStep === 3) {
-      setLoading(true);
-      
-      // Add timeout to prevent infinite loading
-      const timeoutId = setTimeout(() => {
-        console.log('Learning path generation timeout reached, using fallback');
-        setLoading(false);
-        
-        // Generate learning path locally as fallback
-        generateLearningPath(userPreferences);
-        setCurrentStep(4);
-        
-        alert('Learning path generated! Using local processing due to server timeout.');
-      }, 10000); // 10 second timeout
-      
-      try {
-        console.log('Saving preferences to Firestore...');
-        // Try to save preferences to Firestore
-        try {
-          const userRef = doc(db, "users", user.email);
-          await updateDoc(userRef, {
-            learningPreferences: userPreferences
-          });
-          console.log('Preferences saved successfully to Firestore');
-        } catch (firestoreError) {
-          console.warn('Firestore save failed, but continuing with local generation:', firestoreError);
-          // Continue without saving to Firestore
-        }
-
-        clearTimeout(timeoutId); // Clear timeout if successful
-        
-        // Generate learning path locally
-        console.log('Generating learning path...');
-        generateLearningPath(userPreferences);
-        setCurrentStep(4);
-        console.log('Moved to step 4');
-      } catch (error) {
-        clearTimeout(timeoutId); // Clear timeout on error
-        console.error('Error in handleNext:', error);
-        // Fallback: Generate learning path even if save fails
-        console.log('Using fallback: generating learning path without saving');
-        generateLearningPath(userPreferences);
-        setCurrentStep(4);
-      } finally {
-        setLoading(false);
+  const toggleSkillCompletion = (skill) => {
+    setCompletedSkills(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(skill)) {
+        newSet.delete(skill);
+      } else {
+        newSet.add(skill);
       }
-    } else {
-      console.log('Moving to next step:', currentStep + 1);
-      setCurrentStep(prev => prev + 1);
-    }
+      return newSet;
+    });
   };
 
-  const handleBack = () => {
-    setCurrentStep(prev => prev - 1);
-  };
-
-  const renderStep1 = () => (
-    <div className="text-center">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">What programming languages interest you?</h2>
-      <p className="text-gray-600 mb-8">Select the languages you'd like to learn (you can choose multiple)</p>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {programmingLanguages.map((language) => (
-          <button
-            key={language.id}
-            onClick={() => handleLanguageToggle(language.id)}
-            className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 ${
-              userPreferences.languages.includes(language.id)
-                ? 'border-blue-500 bg-blue-50 shadow-lg'
-                : 'border-gray-200 bg-white/20 hover:border-blue-300'
-            }`}
-          >
-            <div className="text-3xl mb-2">{language.icon}</div>
-            <div className="font-semibold text-gray-800">{language.name}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderStep2 = () => (
-    <div className="text-center">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">What development areas interest you?</h2>
-      <p className="text-gray-600 mb-8">Choose the areas you want to specialize in</p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {developmentAreas.map((area) => (
-          <button
-            key={area.id}
-            onClick={() => handleGoalToggle(area.id)}
-            className={`p-6 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 text-left ${
-              userPreferences.learningGoals.includes(area.id)
-                ? 'border-purple-500 bg-purple-50 shadow-lg'
-                : 'border-gray-200 bg-white/20 hover:border-purple-300'
-            }`}
-          >
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">{area.icon}</span>
-              <div>
-                <div className="font-semibold text-gray-800">{area.name}</div>
-                <div className="text-sm text-gray-600">{area.description}</div>
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderStep3 = () => (
-    <div className="text-center">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">Tell us about your learning preferences</h2>
-      
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">How much time can you dedicate per week?</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {timeOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  console.log('Time option selected:', option.value);
-                  setUserPreferences(prev => ({ ...prev, hoursPerWeek: option.value }));
-                }}
-                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                  userPreferences.hoursPerWeek === option.value
-                    ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                    : 'border-gray-200 bg-white/20 hover:border-emerald-300'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">What's your current skill level?</h3>
-          <div className="space-y-3">
-            {skillLevels.map((level) => (
-              <button
-                key={level.value}
-                onClick={() => {
-                  console.log('Skill level selected:', level.value);
-                  setUserPreferences(prev => ({ ...prev, skillLevel: level.value }));
-                }}
-                className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left ${
-                  userPreferences.skillLevel === level.value
-                    ? 'border-orange-500 bg-orange-50 shadow-lg'
-                    : 'border-gray-200 bg-white/20 hover:border-orange-300'
-                }`}
-              >
-                <div className="font-semibold text-gray-800">{level.label}</div>
-                <div className="text-sm text-gray-600">{level.description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Your Personalized Learning Path</h2>
-      
-      {learningPath && (
-        <div className="space-y-8">
-          {/* Overview */}
-          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Learning Overview</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{learningPath.courses.length}</div>
-                <div className="text-gray-600">Courses</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">{learningPath.timeline}</div>
-                <div className="text-gray-600">Timeline</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{learningPath.weeklyHours} hrs/week</div>
-                <div className="text-gray-600">Study Time</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Selected Languages */}
-          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Languages to Learn</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {learningPath.languages.map((language) => (
-                <div key={language.id} className="text-center p-4 bg-white/10 rounded-xl">
-                  <div className="text-3xl mb-2">{language.icon}</div>
-                  <div className="font-semibold text-gray-800">{language.name}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Development Areas */}
-          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Development Areas</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {learningPath.areas.map((area) => (
-                <div key={area.id} className="flex items-center space-x-3 p-4 bg-white/10 rounded-xl">
-                  <span className="text-2xl">{area.icon}</span>
-                  <div>
-                    <div className="font-semibold text-gray-800">{area.name}</div>
-                    <div className="text-sm text-gray-600">{area.description}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Course Recommendations */}
-          <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Recommended Courses</h3>
-            <div className="space-y-4">
-              {learningPath.courses.map((course) => (
-                <div key={course.id} className="flex items-center justify-between p-4 bg-white/10 rounded-xl">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-gray-800">{course.title}</div>
-                      <div className="text-sm text-gray-600">{course.description}</div>
-                      <div className="text-xs text-gray-500">{course.duration}</div>
-                    </div>
-                  </div>
-                  <button 
-                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300"
-                    onClick={() => showYouTubeChannels(course)}
-                  >
-                    Start Course
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Estimated Completion */}
-          <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-2xl p-6 border border-purple-500/30">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Timeline</h3>
-            <div className="text-center">
-              <p className="text-gray-700 mb-2">
-                Estimated completion date: <span className="font-semibold">{learningPath.estimatedCompletion}</span>
-              </p>
-              <p className="text-sm text-gray-600">
-                Based on {learningPath.weeklyHours} hours per week of dedicated study time
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const showYouTubeChannels = (course) => {
-    setSelectedCourse(course);
-    setShowYouTubeModal(true);
-  };
-
-  const openYouTubeChannel = (url) => {
-    window.open(url, '_blank');
-  };
-
-  const closeYouTubeModal = () => {
-    setShowYouTubeModal(false);
-    setSelectedCourse(null);
+  const getProgressPercentage = () => {
+    if (!learningPath) return 0;
+    const totalSkills = learningPath.learning_path.length;
+    const completed = learningPath.learning_path.filter(item => 
+      completedSkills.has(item.skill)
+    ).length;
+    return totalSkills > 0 ? (completed / totalSkills) * 100 : 0;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 p-6">
+    <div className="p-8 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4 animate-text-glow">
-            Learn Platform
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            Learning Platform
           </h1>
           <p className="text-gray-600 text-lg">
-            Get personalized learning recommendations based on your goals
+            Get personalized learning paths tailored to your career goals
           </p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-6 shadow-lg mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-gray-700">Step {currentStep} of 4</span>
-            <span className="text-sm text-gray-600">{Math.round((currentStep / 4) * 100)}% Complete</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${(currentStep / 4) * 100}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Step Content */}
-        <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl p-8 shadow-lg mb-8 animate-fade-in-scale">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-          {currentStep === 4 && renderStep4()}
-        </div>
-
-        {/* Navigation */}
-        {currentStep < 4 && (
-          <div className="flex justify-between">
-            <button
-              onClick={handleBack}
-              disabled={currentStep === 1}
-              className="px-6 py-3 bg-white/20 text-gray-700 rounded-lg hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={
-                (() => {
-                  const step1Disabled = currentStep === 1 && userPreferences.languages.length === 0;
-                  const step2Disabled = currentStep === 2 && userPreferences.learningGoals.length === 0;
-                  const step3Disabled = currentStep === 3 && (!userPreferences.hoursPerWeek || !userPreferences.skillLevel);
-                  
-                  console.log('Button validation:', {
-                    currentStep,
-                    step1Disabled,
-                    step2Disabled,
-                    step3Disabled,
-                    languages: userPreferences.languages,
-                    learningGoals: userPreferences.learningGoals,
-                    hoursPerWeek: userPreferences.hoursPerWeek,
-                    skillLevel: userPreferences.skillLevel
-                  });
-                  
-                  return step1Disabled || step2Disabled || step3Disabled;
-                })()
-              }
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Generating...</span>
-                </div>
-              ) : (
-                currentStep === 3 ? 'Generate Learning Path' : 'Next'
-              )}
-            </button>
-          </div>
-        )}
-        
-        {/* Status Indicator for Learning Path Generation */}
-        {loading && (
-          <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-              <span className="text-blue-700 font-medium">Generating your personalized learning path...</span>
-            </div>
-            <p className="text-sm text-blue-600 mt-2 text-center">
-              This may take a few moments. If it takes too long, we'll use local processing.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* YouTube Channels Modal */}
-      {showYouTubeModal && selectedCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 animate-slideUp">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">🎥 Top YouTube Channels for {selectedCourse.title}</h3>
-              <button 
-                onClick={closeYouTubeModal}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+        {/* Preferences Section */}
+        <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-8 mb-8 shadow-xl">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Set Your Learning Goals</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Role</label>
+              <select
+                value={preferences.target_role}
+                onChange={(e) => setPreferences(prev => ({ ...prev, target_role: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                &times;
-              </button>
+                {targetRoles.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
             </div>
-            
-            <div className="space-y-4">
-              {(() => {
-                const languageId = selectedCourse.id.split('-')[1];
-                const channels = youtubeChannels[languageId] || [];
-                
-                if (channels.length === 0) {
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+              <select
+                value={preferences.experience}
+                onChange={(e) => setPreferences(prev => ({ ...prev, experience: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                {experienceLevels.map(level => (
+                  <option key={level.value} value={level.value}>{level.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Skills (comma-separated)</label>
+            <input
+              type="text"
+              value={preferences.skills.join(', ')}
+              onChange={(e) => {
+                const value = e.target.value;
+                const skillsArray = value ? value.split(',').map(s => s.trim()).filter(s => s) : [];
+                setPreferences(prev => ({ 
+                  ...prev, 
+                  skills: skillsArray
+                }));
+              }}
+              onKeyDown={(e) => {
+                // Allow comma input
+                if (e.key === ',') {
+                  e.stopPropagation();
+                }
+              }}
+              placeholder="e.g., JavaScript, Python, React"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500 mt-1">Separate skills with commas (e.g., Python, JavaScript, React)</p>
+          </div>
+
+          <button
+            onClick={generateLearningPath}
+            disabled={loading}
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+          >
+            {loading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Generating Path...
+              </div>
+            ) : (
+              'Generate Learning Path'
+            )}
+          </button>
+        </div>
+
+        {/* Learning Path Results */}
+        {learningPath && (
+          <div className="space-y-6">
+            {/* Progress Overview */}
+            <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Learning Progress</h3>
+                <span className="text-2xl font-bold text-indigo-600">
+                  {Math.round(getProgressPercentage())}%
+                </span>
+              </div>
+              
+              <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div 
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 h-4 rounded-full transition-all duration-1000"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                ></div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div className="bg-white/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-800">{learningPath.completion_time}</div>
+                  <div className="text-gray-600">Estimated Time</div>
+                </div>
+                <div className="bg-white/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-800">{learningPath.progress?.completed || 0}</div>
+                  <div className="text-gray-600">Skills Mastered</div>
+                </div>
+                <div className="bg-white/50 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-gray-800">{learningPath.progress?.remaining || 0}</div>
+                  <div className="text-gray-600">Skills Remaining</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Learning Path Timeline */}
+            <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Your Learning Roadmap</h3>
+              
+              <div className="space-y-4">
+                {learningPath.learning_path.map((item, index) => {
+                  const isCompleted = completedSkills.has(item.skill);
+                  const isCurrent = !isCompleted && index === 0;
+                  
                   return (
-                    <div className="text-center py-8">
-                      <p className="text-gray-600">No YouTube channels found for this course.</p>
+                    <div key={index} className={`relative flex items-center p-4 rounded-lg border-2 transition-all duration-300 ${
+                      isCompleted 
+                        ? 'bg-green-50 border-green-200' 
+                        : isCurrent 
+                        ? 'bg-blue-50 border-blue-200 shadow-lg' 
+                        : 'bg-white/50 border-gray-200'
+                    }`}>
+                      {/* Timeline connector */}
+                      {index < learningPath.learning_path.length - 1 && (
+                        <div className={`absolute left-6 top-16 w-0.5 h-8 ${
+                          isCompleted ? 'bg-green-400' : 'bg-gray-300'
+                        }`}></div>
+                      )}
+                      
+                      {/* Status indicator */}
+                      <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                        isCompleted 
+                          ? 'bg-green-500 text-white' 
+                          : isCurrent 
+                          ? 'bg-blue-500 text-white animate-pulse' 
+                          : 'bg-gray-300 text-gray-600'
+                      }`}>
+                        {isCompleted ? (
+                          <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <span className="font-bold">{item.week}</span>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className={`text-lg font-semibold ${
+                            isCompleted ? 'text-green-800' : isCurrent ? 'text-blue-800' : 'text-gray-800'
+                          }`}>
+                            {item.skill}
+                          </h4>
+                          <span className={`text-sm px-2 py-1 rounded-full ${
+                            isCompleted 
+                              ? 'bg-green-200 text-green-800' 
+                              : isCurrent 
+                              ? 'bg-blue-200 text-blue-800' 
+                              : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            Week {item.week}
+                          </span>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-3">Duration: {item.duration}</p>
+                        
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {item.resources.map((resource, idx) => (
+                            <span key={idx} className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-sm">
+                              {resource}
+                            </span>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => toggleSkillCompletion(item.skill)}
+                          className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                            isCompleted
+                              ? 'bg-green-500 text-white hover:bg-green-600'
+                              : 'bg-indigo-500 text-white hover:bg-indigo-600'
+                          }`}
+                        >
+                          {isCompleted ? 'Completed ✓' : 'Mark as Complete'}
+                        </button>
+                      </div>
                     </div>
                   );
-                }
-                
-                return channels.map((channel, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800 text-lg">{channel.name}</h4>
-                        <p className="text-gray-600 text-sm">{channel.description}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => openYouTubeChannel(channel.url)}
-                      className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
-                    >
-                      Start Class
-                    </button>
-                  </div>
-                ));
-              })()}
+                })}
+              </div>
             </div>
-            
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Click "Start Class" to open the YouTube channel in a new tab
-              </p>
+
+            {/* Next Steps */}
+            {learningPath.next_skills && learningPath.next_skills.length > 0 && (
+              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Recommended Next Steps</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {learningPath.next_skills.map((skill, index) => (
+                    <div key={index} className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 text-center">
+                      <div className="text-lg font-semibold text-indigo-800 mb-2">{skill}</div>
+                      <div className="text-sm text-indigo-600">High Priority</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Learning Resources */}
+        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
+          <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+            <svg className="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Recommended Learning Resources
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-semibold text-gray-800 mb-2">Online Courses</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Coursera</li>
+                <li>• Udemy</li>
+                <li>• edX</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-semibold text-gray-800 mb-2">Practice Platforms</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• LeetCode</li>
+                <li>• HackerRank</li>
+                <li>• Codewars</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-semibold text-gray-800 mb-2">Documentation</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• MDN Web Docs</li>
+                <li>• Python.org</li>
+                <li>• React Docs</li>
+              </ul>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-semibold text-gray-800 mb-2">Communities</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Stack Overflow</li>
+                <li>• GitHub</li>
+                <li>• Reddit</li>
+              </ul>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

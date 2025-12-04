@@ -26,6 +26,7 @@ const JobProviderDashboard = React.lazy(() => import("./components/dashboard/Job
 const JobProviderJobsPage = React.lazy(() => import("./components/dashboard/EmployeeJobsPage"));
 const JobSeekerProgress = React.lazy(() => import("./components/dashboard/StudentProgress"));
 const FirebaseDataViewer = React.lazy(() => import("./components/FirebaseDataViewer"));
+const SeedData = React.lazy(() => import("./components/SeedData"));
 
 function App() {
   // Apply light theme to body
@@ -376,6 +377,16 @@ useEffect(() => {
           <Route path="/firebase-data" element={
             <Suspense fallback={<div>Loading Firebase Data Viewer...</div>}>
               <FirebaseDataViewer user={user} />
+            </Suspense>
+          } />
+          <Route path="/seed-data" element={
+            <Suspense fallback={<div>Loading...</div>}>
+              <SeedData />
+            </Suspense>
+          } />
+          <Route path="/provider-dashboard" element={
+            <Suspense fallback={<div>Loading...</div>}>
+              <JobProviderDashboard user={user} />
             </Suspense>
           } />
         </Routes>

@@ -62,13 +62,14 @@ export default function Login({ onLogin }) {
         body: JSON.stringify(requestBody)
       });
       const data = await res.json();
-      if (res.ok) {
+      if (data.status === "registered" || data.status === "success") {
         onLogin(data);
       } else {
         setError(data.detail || "Authentication failed.");
       }
     } catch (err) {
-      setError("Server error. Try again later.");
+      console.error("Auth error:", err);
+      setError("Server connection failed. Please check if backend is running.");
     } finally {
       setLoading(false);
     }

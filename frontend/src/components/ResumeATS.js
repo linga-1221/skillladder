@@ -1,682 +1,240 @@
-import React, { useState, useRef } from 'react';
-import { db, storage } from '../firebase/config';
-import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import React, { useState } from 'react';
 
 export default function ResumeATS({ user, onResult }) {
   const [file, setFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef(null);
+  const [error, setError] = useState('');
 
-  // Sample skills database for extraction
-  const skillDatabase = {
-    programming: ['python', 'java', 'javascript', 'react', 'node.js', 'c++', 'c#', 'php', 'ruby', 'swift', 'kotlin', 'go', 'rust', 'typescript', 'angular', 'vue.js', 'django', 'flask', 'spring', 'express.js'],
-    databases: ['mysql', 'postgresql', 'mongodb', 'redis', 'sqlite', 'oracle', 'sql server', 'dynamodb', 'cassandra'],
-    cloud: ['aws', 'azure', 'google cloud', 'docker', 'kubernetes', 'jenkins', 'git', 'github', 'gitlab'],
-    tools: ['jira', 'confluence', 'slack', 'trello', 'figma', 'adobe', 'photoshop', 'illustrator'],
-    frameworks: ['react', 'angular', 'vue', 'django', 'flask', 'spring', 'express', 'laravel', 'asp.net'],
-    methodologies: ['agile', 'scrum', 'kanban', 'waterfall', 'devops', 'ci/cd', 'tdd', 'bdd']
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFile = (selectedFile) => {
-    console.log('File selected:', selectedFile);
-    console.log('File type:', selectedFile.type);
-    console.log('File name:', selectedFile.name);
-    
-    if (selectedFile.type === 'application/pdf') {
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile && selectedFile.type === 'application/pdf') {
       setFile(selectedFile);
-      console.log('PDF file accepted');
+      setError('');
     } else {
-      console.log('Invalid file type:', selectedFile.type);
-      alert('Please upload a PDF file');
+      setError('Please select a PDF file');
     }
-  };
-
-  const extractTextFromPDF = async (file) => {
-    // For now, we'll use a more realistic text extraction approach
-    // In production, you would use a PDF parsing library like pdf-parse
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          // Try to extract text from the file
-          let extractedText = '';
-          
-          // For PDF files, we'll simulate extraction with realistic data
-          // In a real implementation, you would use pdf-parse or similar library
-          if (file.type === 'application/pdf') {
-            // Simulate different resume content based on file size/name
-            const fileName = file.name.toLowerCase();
-            if (fileName.includes('software') || fileName.includes('developer')) {
-              extractedText = `
-                John Doe
-                Software Engineer
-                Email: john.doe@email.com
-                Phone: (555) 123-4567
-                
-                EDUCATION
-                Bachelor of Technology in Computer Science
-                CGPA: 8.5/10
-                University of Technology, 2020-2024
-                
-                SKILLS
-                Programming Languages: Python, JavaScript, Java, C++, TypeScript
-                Web Technologies: React, Node.js, HTML, CSS, Angular, Vue.js
-                Databases: MySQL, MongoDB, PostgreSQL, Redis
-                Tools: Git, Docker, AWS, Jenkins, Kubernetes
-                Frameworks: Express.js, Django, Spring Boot, Laravel
-                
-                EXPERIENCE
-                Software Developer Intern at TechCorp
-                - Developed web applications using React and Node.js
-                - Implemented RESTful APIs and microservices
-                - Worked with MySQL and MongoDB databases
-                - Used Git for version control and Docker for deployment
-                
-                PROJECTS
-                E-commerce Platform
-                - Built using React, Node.js, MongoDB
-                - Implemented user authentication and payment integration
-                - Deployed on AWS using Docker containers
-                
-                Machine Learning Project
-                - Developed a recommendation system using Python
-                - Used scikit-learn, pandas, and numpy libraries
-                - Implemented data preprocessing and model training
-              `;
-            } else if (fileName.includes('data') || fileName.includes('analyst')) {
-              extractedText = `
-                Jane Smith
-                Data Scientist
-                Email: jane.smith@email.com
-                Phone: (555) 987-6543
-                
-                EDUCATION
-                Master of Science in Data Science
-                CGPA: 9.2/10
-                Data University, 2022-2024
-                
-                SKILLS
-                Programming Languages: Python, R, SQL, Scala
-                Machine Learning: TensorFlow, PyTorch, scikit-learn, pandas
-                Big Data: Hadoop, Spark, Kafka, Hive
-                Visualization: Tableau, Power BI, Matplotlib, Seaborn
-                Cloud: AWS, Azure, Google Cloud Platform
-                
-                EXPERIENCE
-                Data Analyst at DataCorp
-                - Analyzed large datasets using Python and SQL
-                - Built predictive models using machine learning
-                - Created interactive dashboards with Tableau
-                - Collaborated with cross-functional teams
-                
-                PROJECTS
-                Customer Segmentation Analysis
-                - Used K-means clustering for customer segmentation
-                - Implemented in Python with scikit-learn
-                - Achieved 85% accuracy in predictions
-              `;
-            } else {
-              // Default resume content
-              extractedText = `
-                Alex Johnson
-                Full Stack Developer
-                Email: alex.johnson@email.com
-                Phone: (555) 456-7890
-                
-                EDUCATION
-                Bachelor of Engineering in Information Technology
-                CGPA: 8.8/10
-                Tech Institute, 2019-2023
-                
-                SKILLS
-                Programming Languages: JavaScript, Python, Java, PHP
-                Frontend: React, Angular, Vue.js, HTML5, CSS3, Bootstrap
-                Backend: Node.js, Express.js, Django, Spring Boot
-                Databases: MySQL, PostgreSQL, MongoDB, Redis
-                DevOps: Docker, Kubernetes, AWS, CI/CD, Jenkins
-                
-                EXPERIENCE
-                Full Stack Developer at WebSolutions
-                - Developed responsive web applications
-                - Implemented RESTful APIs and GraphQL
-                - Optimized database queries and performance
-                - Led agile development processes
-                
-                PROJECTS
-                Social Media Platform
-                - Built with React, Node.js, and MongoDB
-                - Real-time messaging and notifications
-                - Image upload and processing features
-              `;
-            }
-          } else {
-            // For non-PDF files, try to read as text
-            extractedText = e.target.result || '';
-          }
-          
-          resolve(extractedText);
-        } catch (error) {
-          console.error('Error extracting text:', error);
-          // Fallback to a basic resume template
-          resolve(`
-            Resume Content
-            Email: user@email.com
-            Phone: (555) 000-0000
-            
-            EDUCATION
-            Degree in Computer Science
-            CGPA: 7.5/10
-            
-            SKILLS
-            Programming: JavaScript, Python, Java
-            Web Development: HTML, CSS, React
-            Database: MySQL, MongoDB
-            
-            EXPERIENCE
-            Software Developer
-            - Developed web applications
-            - Worked with various technologies
-          `);
-        }
-      };
-      reader.readAsText(file);
-    });
-  };
-
-  const extractSkills = (text) => {
-    const extractedSkills = [];
-    const textLower = text.toLowerCase();
-    
-    console.log('Extracting skills from text:', text.substring(0, 200) + '...');
-    
-    Object.entries(skillDatabase).forEach(([category, skills]) => {
-      skills.forEach(skill => {
-        if (textLower.includes(skill.toLowerCase())) {
-          extractedSkills.push(skill);
-          console.log(`Found skill: ${skill} in category: ${category}`);
-        }
-      });
-    });
-    
-    const uniqueSkills = [...new Set(extractedSkills)]; // Remove duplicates
-    console.log('Extracted skills:', uniqueSkills);
-    return uniqueSkills;
-  };
-
-  const extractCGPA = (text) => {
-    const cgpaMatch = text.match(/cgpa[:\s]*(\d+\.?\d*)/i);
-    if (cgpaMatch) {
-      return parseFloat(cgpaMatch[1]);
-    }
-    return null;
-  };
-
-  const calculateATSScore = (skills, cgpa, text) => {
-    let score = 50; // Base score
-    
-    console.log('Calculating ATS score with:', { skills, cgpa, textLength: text.length });
-    
-    // Skills contribution (30 points)
-    const skillScore = Math.min(skills.length * 2, 30);
-    score += skillScore;
-    console.log(`Skills score: ${skillScore} (${skills.length} skills)`);
-    
-    // CGPA contribution (10 points)
-    if (cgpa) {
-      const cgpaScore = Math.min((cgpa / 10) * 10, 10);
-      score += cgpaScore;
-      console.log(`CGPA score: ${cgpaScore} (CGPA: ${cgpa})`);
-    }
-    
-    // Text quality contribution (10 points)
-    const hasEmail = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/.test(text);
-    const hasPhone = /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/.test(text);
-    const hasEducation = /education|degree|bachelor|master|phd/i.test(text);
-    const hasExperience = /experience|work|intern|job/i.test(text);
-    
-    if (hasEmail) score += 2;
-    if (hasPhone) score += 2;
-    if (hasEducation) score += 3;
-    if (hasExperience) score += 3;
-    
-    console.log(`Text quality: Email=${hasEmail}, Phone=${hasPhone}, Education=${hasEducation}, Experience=${hasExperience}`);
-    console.log(`Final ATS score: ${Math.min(Math.round(score), 100)}`);
-    
-    return Math.min(Math.round(score), 100);
   };
 
   const handleUpload = async () => {
-    if (!file) return;
-    
-    console.log('Starting upload process for file:', file.name);
-    setIsUploading(true);
-    setIsAnalyzing(true);
-    
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.log('Upload timeout reached, using fallback');
-      setIsUploading(false);
-      setIsAnalyzing(false);
-      
-      // Use the actual file content for fallback analysis
-      const fallbackResult = {
-        fileName: file.name,
-        fileUrl: null,
-        skills: extractSkillsFromFile(file), // Extract skills from file name/content
-        cgpa: extractCGPAFromFile(file), // Extract CGPA from file name/content
-        atsScore: calculateATSScoreFromFile(file), // Calculate ATS score from file
-        extractedText: 'Resume analysis completed with fallback data',
-        uploadedAt: new Date().toISOString()
-      };
-      
-      setResult(fallbackResult);
-      if (onResult) {
-        onResult(fallbackResult);
-      }
-      
-      alert('Resume analysis completed! Using fallback data due to server timeout.');
-    }, 15000); // 15 second timeout
-    
+    if (!file) {
+      setError('Please select a file first');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+
     try {
-      // First, try to analyze the resume using the backend API
-      console.log('Analyzing resume with backend API...');
       const formData = new FormData();
       formData.append('file', file);
-      
-      const analysisResponse = await fetch('http://localhost:8000/upload_resume/', {
+
+      const response = await fetch('http://localhost:8000/upload_resume/', {
         method: 'POST',
-        body: formData
+        body: formData,
       });
-      
-      clearTimeout(timeoutId); // Clear timeout if successful
-      
-      if (!analysisResponse.ok) {
-        throw new Error('Backend analysis failed');
-      }
-      
-      const analysisData = await analysisResponse.json();
-      console.log('Backend analysis result:', analysisData);
-      
-      // Create result object with backend analysis
-      const analysisResult = {
-        fileName: file.name,
-        fileUrl: null, // We'll skip Firebase storage for now
-        skills: analysisData.skills || [],
-        cgpa: analysisData.cgpa,
-        atsScore: analysisData.ats_score || 50,
-        extractedText: analysisData.text_preview || 'Resume content extracted',
-        uploadedAt: new Date().toISOString()
-      };
-      
-      console.log('Analysis result:', analysisResult);
-      
-      // Try to save to Firestore, but don't fail if it doesn't work
-      try {
-        console.log('Attempting to save to Firestore...');
-      const userRef = doc(db, "users", user.email);
-      await updateDoc(userRef, {
-        resumeAnalysis: analysisResult,
-        lastUpdated: new Date().toISOString()
-      });
-      console.log('Saved to Firestore successfully');
-      } catch (firestoreError) {
-        console.warn('Firestore save failed, but continuing with analysis:', firestoreError);
-        // Continue without saving to Firestore
-      }
-      
-      setResult(analysisResult);
-      if (onResult) {
-        onResult(analysisResult);
-      }
-      
-    } catch (error) {
-      clearTimeout(timeoutId); // Clear timeout on error
-      console.error('Error in upload process:', error);
-      
-      // Fallback: Create a basic analysis result using file content
-      const fallbackResult = {
-        fileName: file.name,
-        fileUrl: null,
-        skills: extractSkillsFromFile(file), // Extract skills from file
-        cgpa: extractCGPAFromFile(file), // Extract CGPA from file
-        atsScore: calculateATSScoreFromFile(file), // Calculate ATS score from file
-        extractedText: 'Resume analysis completed with fallback data',
-        uploadedAt: new Date().toISOString()
-      };
-      
-      console.log('Using fallback result:', fallbackResult);
-      setResult(fallbackResult);
-      if (onResult) {
-        onResult(fallbackResult);
-      }
-      
-      // Show a more user-friendly error message
-      alert('Resume analysis completed! Some features may be limited due to server issues.');
-    } finally {
-      setIsUploading(false);
-      setIsAnalyzing(false);
-    }
-  };
 
-  // Helper functions to extract data from file for fallback
-  const extractSkillsFromFile = (file) => {
-    const fileName = file.name.toLowerCase();
-    const extractedSkills = [];
-    
-    // Extract skills based on file name and content
-    Object.entries(skillDatabase).forEach(([category, skills]) => {
-      skills.forEach(skill => {
-        if (fileName.includes(skill.toLowerCase())) {
-          extractedSkills.push(skill);
-        }
-      });
-    });
-    
-    // If no skills found in filename, provide default skills based on file type
-    if (extractedSkills.length === 0) {
-      if (fileName.includes('software') || fileName.includes('developer')) {
-        extractedSkills.push('JavaScript', 'React', 'Node.js', 'Python', 'HTML', 'CSS');
-      } else if (fileName.includes('data') || fileName.includes('analyst')) {
-        extractedSkills.push('Python', 'SQL', 'Excel', 'Data Analysis', 'Machine Learning');
+      const data = await response.json();
+      
+      if (data.error) {
+        setError(data.error);
       } else {
-        extractedSkills.push('JavaScript', 'React', 'Node.js', 'Python', 'HTML', 'CSS');
+        setResult(data);
+        if (onResult) onResult(data);
       }
+    } catch (err) {
+      setError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
     }
-    
-    return extractedSkills;
   };
 
-  const extractCGPAFromFile = (file) => {
-    const fileName = file.name.toLowerCase();
-    
-    // Try to extract CGPA from filename
-    const cgpaMatch = fileName.match(/cgpa[:\s]*(\d+\.?\d*)/i);
-    if (cgpaMatch) {
-      return parseFloat(cgpaMatch[1]);
-    }
-    
-    // Try to extract CGPA from filename patterns
-    const gpaMatch = fileName.match(/gpa[:\s]*(\d+\.?\d*)/i);
-    if (gpaMatch) {
-      return parseFloat(gpaMatch[1]);
-    }
-    
-    // Default CGPA based on file content hints
-    if (fileName.includes('excellent') || fileName.includes('outstanding')) {
-      return 9.0;
-    } else if (fileName.includes('good') || fileName.includes('above')) {
-      return 8.0;
-    } else if (fileName.includes('average') || fileName.includes('decent')) {
-      return 7.0;
-    }
-    
-    return 8.5; // Default CGPA
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
-  const calculateATSScoreFromFile = (file) => {
-    const skills = extractSkillsFromFile(file);
-    const cgpa = extractCGPAFromFile(file);
-    
-    let score = 50; // Base score
-    
-    // Skills contribution (30 points)
-    const skillScore = Math.min(skills.length * 2, 30);
-    score += skillScore;
-    
-    // CGPA contribution (10 points)
-    if (cgpa) {
-      const cgpaScore = Math.min((cgpa / 10) * 10, 10);
-      score += cgpaScore;
-    }
-    
-    // File quality contribution (10 points)
-    const fileName = file.name.toLowerCase();
-    if (fileName.includes('resume') || fileName.includes('cv')) score += 5;
-    if (fileName.includes('2024') || fileName.includes('2023')) score += 5;
-    
-    return Math.min(Math.round(score), 100);
+  const getScoreBackground = (score) => {
+    if (score >= 80) return 'from-green-400 to-emerald-500';
+    if (score >= 60) return 'from-yellow-400 to-orange-500';
+    return 'from-red-400 to-pink-500';
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mb-8 shadow-2xl">
-            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent mb-6">
-            Resume & ATS Analyzer
+    <div className="p-8 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            Resume ATS Analysis
           </h1>
-          <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
-            Upload your resume and get comprehensive ATS optimization insights powered by AI analysis
+          <p className="text-gray-600 text-lg">
+            Upload your resume to get detailed ATS compatibility analysis and improvement suggestions
           </p>
         </div>
 
         {/* Upload Section */}
-        <div className="max-w-5xl mx-auto mb-12">
-          <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-3xl p-12 shadow-2xl">
-            <div
-              className={`border-3 border-dashed rounded-2xl p-16 text-center transition-all duration-500 ${
-                dragActive 
-                  ? 'border-blue-500 bg-blue-50/50 scale-105' 
-                  : 'border-blue-300 hover:border-blue-400 hover:bg-blue-50/30'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <div className="space-y-6">
-                <div className="w-24 h-24 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center mx-auto animate-float-3d shadow-xl">
-                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </div>
-                
-                <div>
-                  <h3 className="text-3xl font-bold text-gray-800 mb-4">
-                    {file ? file.name : 'Upload your resume'}
-                  </h3>
-                  <p className="text-gray-600 text-lg mb-6">
-                    {file ? 'Ready to analyze' : 'Drag and drop your PDF resume here, or click to browse files'}
-                  </p>
-                </div>
-                
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-lg font-semibold"
-                >
-                  Choose File
-                </button>
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
-                  className="hidden"
-                />
-                
-                <p className="text-sm text-gray-500">Supports PDF files up to 10MB</p>
-              </div>
+        <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-8 mb-8 shadow-xl">
+          <div className="text-center">
+            <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 mb-6 hover:border-blue-500 transition-colors">
+              <svg className="mx-auto h-12 w-12 text-blue-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                className="hidden"
+                id="resume-upload"
+              />
+              <label htmlFor="resume-upload" className="cursor-pointer">
+                <span className="text-blue-600 font-semibold">Click to upload</span> or drag and drop
+                <p className="text-gray-500 mt-2">PDF files only (Max 10MB)</p>
+              </label>
             </div>
-            
+
             {file && (
-              <div className="mt-8 text-center">
-                <button
-                  onClick={handleUpload}
-                  disabled={isUploading || isAnalyzing}
-                  className="px-12 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl text-xl font-bold"
-                >
-                  {isUploading || isAnalyzing ? (
-                    <div className="flex items-center space-x-3">
-                      <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>{isUploading ? 'Uploading...' : 'Analyzing...'}</span>
-                    </div>
-                  ) : (
-                    'Analyze Resume'
-                  )}
-                </button>
-                
-                {/* Status Indicator */}
-                {(isUploading || isAnalyzing) && (
-                  <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-                      <span className="text-blue-700 font-medium">
-                        {isUploading ? 'Uploading to server...' : 'Analyzing resume content...'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-blue-600 mt-2">
-                      This may take a few moments. If it takes too long, we'll use fallback data.
-                    </p>
-                  </div>
-                )}
+              <div className="flex items-center justify-center mb-4">
+                <svg className="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-gray-700">{file.name}</span>
               </div>
             )}
+
+            {error && (
+              <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4">
+                {error}
+              </div>
+            )}
+
+            <button
+              onClick={handleUpload}
+              disabled={!file || uploading}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+            >
+              {uploading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Analyzing Resume...
+                </div>
+              ) : (
+                'Analyze Resume'
+              )}
+            </button>
           </div>
         </div>
 
         {/* Results Section */}
         {result && (
-          <div className="space-y-8">
-            {/* Score Cards */}
-            <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-3xl p-10 shadow-2xl">
-              <h2 className="text-4xl font-bold text-gray-800 mb-10 text-center">Analysis Results</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                {/* ATS Score */}
-                <div className="bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-2xl p-8 border border-blue-500/30 transform hover:scale-105 transition-all duration-300">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-blue-600 mb-4">{result.atsScore}/100</div>
-                    <div className="text-gray-700 text-xl font-medium mb-6">ATS Score</div>
-                    <div className="w-full bg-gray-200 rounded-full h-4">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-indigo-600 h-4 rounded-full transition-all duration-2000 shadow-lg"
-                        style={{ width: `${result.atsScore}%` }}
-                      ></div>
-                    </div>
-                    <div className="mt-4 text-sm text-gray-600">
-                      {result.atsScore >= 80 ? 'Excellent' : result.atsScore >= 60 ? 'Good' : 'Needs Improvement'}
-                    </div>
-                  </div>
+          <div className="space-y-6">
+            {/* ATS Score */}
+            <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-8 shadow-xl">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">ATS Compatibility Score</h2>
+                <div className={`text-6xl font-bold ${getScoreColor(result.ats_score)} mb-4`}>
+                  {result.ats_score}/100
                 </div>
-                
-                {/* CGPA */}
-                <div className="bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl p-8 border border-emerald-500/30 transform hover:scale-105 transition-all duration-300">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-emerald-600 mb-4">
-                      {result.cgpa || 'N/A'}
-                    </div>
-                    <div className="text-gray-700 text-xl font-medium">CGPA</div>
-                    {result.cgpa && (
-                      <div className="mt-4 text-sm text-gray-600">
-                        {result.cgpa >= 8.0 ? 'Outstanding' : result.cgpa >= 7.0 ? 'Good' : 'Average'}
-                      </div>
-                    )}
-                  </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+                  <div 
+                    className={`bg-gradient-to-r ${getScoreBackground(result.ats_score)} h-4 rounded-full transition-all duration-1000`}
+                    style={{ width: `${result.ats_score}%` }}
+                  ></div>
                 </div>
+                <p className="text-gray-600">
+                  {result.ats_score >= 80 ? 'Excellent! Your resume is highly ATS-compatible.' :
+                   result.ats_score >= 60 ? 'Good score with room for improvement.' :
+                   'Needs significant improvement for better ATS compatibility.'}
+                </p>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Skills */}
-              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-3xl p-8 shadow-2xl">
-                <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mr-4">
-                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-800">Extracted Skills</h3>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {result.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-700 rounded-full text-sm font-medium border border-purple-500/30 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300"
-                    >
+
+            {/* Skills Analysis */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                  <svg className="h-6 w-6 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  Detected Skills ({result.skills?.length || 0})
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {result.skills?.map((skill, index) => (
+                    <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                       {skill}
                     </span>
                   ))}
                 </div>
               </div>
-              
-              {/* Recommendations */}
-              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-3xl p-8 shadow-2xl">
-                <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-4">
-                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
+
+              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                  <svg className="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Analysis Summary
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Skills:</span>
+                    <span className="font-semibold">{result.analysis?.total_skills || 0}</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-800">AI Recommendations</h3>
-                </div>
-                <div className="space-y-4">
-                  {result.atsScore < 70 && (
-                    <div className="flex items-start p-4 bg-amber-50/50 rounded-xl border border-amber-200/50">
-                      <span className="text-amber-500 mr-3 mt-1 text-xl">💡</span>
-                      <div>
-                        <div className="font-semibold text-gray-800">Improve ATS Score</div>
-                        <div className="text-gray-600 text-sm">Add more relevant keywords to boost your score</div>
-                      </div>
-                    </div>
-                  )}
-                  {result.skills.length < 5 && (
-                    <div className="flex items-start p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
-                      <span className="text-blue-500 mr-3 mt-1 text-xl">⚡</span>
-                      <div>
-                        <div className="font-semibold text-gray-800">Add Technical Skills</div>
-                        <div className="text-gray-600 text-sm">Include more programming languages and tools</div>
-                      </div>
-                    </div>
-                  )}
-                  {!result.cgpa && (
-                    <div className="flex items-start p-4 bg-emerald-50/50 rounded-xl border border-emerald-200/50">
-                      <span className="text-emerald-500 mr-3 mt-1 text-xl">📊</span>
-                      <div>
-                        <div className="font-semibold text-gray-800">Include CGPA</div>
-                        <div className="text-gray-600 text-sm">Add your CGPA if it's above 7.0</div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-start p-4 bg-purple-50/50 rounded-xl border border-purple-200/50">
-                    <span className="text-purple-500 mr-3 mt-1 text-xl">✨</span>
-                    <div>
-                      <div className="font-semibold text-gray-800">Format & Achievements</div>
-                      <div className="text-gray-600 text-sm">Ensure proper formatting and add quantifiable achievements</div>
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Skill Diversity:</span>
+                    <span className="font-semibold">{result.analysis?.skill_diversity || 0} categories</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">CGPA:</span>
+                    <span className="font-semibold">{result.cgpa || 'Not found'}</span>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Skill Categories */}
+            {result.skill_categories && Object.keys(result.skill_categories).length > 0 && (
+              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Skills by Category</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(result.skill_categories).map(([category, skills]) => (
+                    <div key={category} className="bg-white/50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-800 capitalize mb-2">{category.replace('_', ' ')}</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {skills.map((skill, index) => (
+                          <span key={index} className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {result.recommendations && result.recommendations.length > 0 && (
+              <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-6 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                  <svg className="h-6 w-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Improvement Recommendations
+                </h3>
+                <div className="space-y-3">
+                  {result.recommendations.map((rec, index) => (
+                    <div key={index} className="flex items-start">
+                      <div className="bg-orange-100 text-orange-600 rounded-full p-1 mr-3 mt-1">
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-700">{rec}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

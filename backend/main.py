@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -7,12 +7,11 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
+import json
+import hashlib
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import uvicorn
-
-# Import routers
-from routers import auth, jobs
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -29,9 +28,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 # Initialize FastAPI
 app = FastAPI(title="Job Portal API", version="1.0.0")
 
-# Include routers
-app.include_router(auth.router)
-app.include_router(jobs.router)
+# File paths for local storage
+USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
+INTERVIEWS_FILE = os.path.join(os.path.dirname(__file__), "interviews.json")
+JOBS_FILE = os.path.join(os.path.dirname(__file__), "jobs.json")
+APPLICATIONS_FILE = os.path.join(os.path.dirname(__file__), "applications.json")
+ATS_SCORES_FILE = os.path.join(os.path.dirname(__file__), "ats_scores.json")
 
 # Security utils
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -85,76 +87,90 @@ def hash_password(password: str) -> str:
 def load_users():
     if not os.path.exists(USERS_FILE):
         return []
-    with open(USERS_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return []
 
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
+    try:
+        with open(USERS_FILE, "w") as f:
+            json.dump(users, f, indent=2)
+    except Exception as e:
+        print(f"Error saving users: {e}")
 
 @app.post("/register/")
 async def register(request: Request):
-    data = await request.json()
-    email = data.get("email")
-    password = data.get("password")
-    role = data.get("role")
-    
-    if not all([email, password, role]):
-        raise HTTPException(status_code=400, detail="Missing registration fields.")
-    
-    # Validate role
-    if role not in ["job_seeker", "job_provider"]:
-        raise HTTPException(status_code=400, detail="Invalid role. Must be 'job_seeker' or 'job_provider'.")
-    
-    users = load_users()
-    if any(u["email"] == email for u in users):
-        raise HTTPException(status_code=400, detail="User already exists.")
-    
-    # Create user object with additional fields for job seekers
-    user_data = {
-        "email": email, 
-        "password": hash_password(password), 
-        "role": role, 
-        "history": []
-    }
-    
-    # Add additional fields for job seekers
-    if role == "job_seeker":
-        name = data.get("name")
-        phone = data.get("phone")
-        graduation_year = data.get("graduationYear")
-        study_year = data.get("studyYear")
-        degree_type = data.get("degreeType")
-        college_name = data.get("collegeName")
+    try:
+        data = await request.json()
+        email = data.get("email")
+        password = data.get("password")
+        role = data.get("role")
+        
+        if not all([email, password, role]):
+            return {"status": "error", "detail": "Missing registration fields."}
+        
+        # Validate role
+        if role not in ["job_seeker", "job_provider"]:
+            return {"status": "error", "detail": "Invalid role. Must be 'job_seeker' or 'job_provider'."}
+        
+        users = load_users()
+        if any(u["email"] == email for u in users):
+            return {"status": "error", "detail": "User already exists."}
+        
+        # Create user object with additional fields for job seekers
+        user_data = {
+            "email": email, 
+            "password": hash_password(password), 
+            "role": role, 
+            "history": []
+        }
+        
+        # Add additional fields for job seekers
+        if role == "job_seeker":
+            name = data.get("name")
+            phone = data.get("phone")
+            graduation_year = data.get("graduationYear")
+            study_year = data.get("studyYear")
+            degree_type = data.get("degreeType")
+            college_name = data.get("collegeName")
 
-        if not all([name, phone, graduation_year, study_year, degree_type, college_name]):
-            raise HTTPException(status_code=400, detail="Missing required fields for job seeker registration.")
+            if not all([name, phone, graduation_year, study_year, degree_type, college_name]):
+                return {"status": "error", "detail": "Missing required fields for job seeker registration."}
 
-        user_data.update({
-            "name": name,
-            "phone": phone,
-            "graduation_year": graduation_year,
-            "study_year": study_year,
-            "degree_type": degree_type,
-            "college_name": college_name
-        })
-    
-    users.append(user_data)
-    save_users(users)
-    return {"status": "registered", "email": email, "role": role}
+            user_data.update({
+                "name": name,
+                "phone": phone,
+                "graduation_year": graduation_year,
+                "study_year": study_year,
+                "degree_type": degree_type,
+                "college_name": college_name
+            })
+        
+        users.append(user_data)
+        save_users(users)
+        return {"status": "registered", "email": email, "role": role}
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return {"status": "error", "detail": "Registration failed. Please try again."}
 
 @app.post("/login/")
 async def login(request: Request):
-    data = await request.json()
-    email = data.get("email")
-    password = data.get("password")
-    if not all([email, password]):
-        raise HTTPException(status_code=400, detail="Missing login fields.")
-    users = load_users()
-    user = next((u for u in users if u["email"] == email and u["password"] == hash_password(password)), None)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials.")
-    return {"status": "success", "email": user["email"], "role": user["role"]}
+    try:
+        data = await request.json()
+        email = data.get("email")
+        password = data.get("password")
+        if not all([email, password]):
+            return {"status": "error", "detail": "Missing login fields."}
+        users = load_users()
+        user = next((u for u in users if u["email"] == email and u["password"] == hash_password(password)), None)
+        if not user:
+            return {"status": "error", "detail": "Invalid credentials."}
+        return {"status": "success", "email": user["email"], "role": user["role"]}
+    except Exception as e:
+        print(f"Login error: {e}")
+        return {"status": "error", "detail": "Login failed. Please try again."}
 
 @app.post("/save_history/")
 async def save_history(request: Request):
@@ -192,12 +208,18 @@ INTERVIEWS_FILE = os.path.join(os.path.dirname(__file__), "interviews.json")
 def load_interviews():
     if not os.path.exists(INTERVIEWS_FILE):
         return []
-    with open(INTERVIEWS_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(INTERVIEWS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return []
 
 def save_interviews(interviews):
-    with open(INTERVIEWS_FILE, "w") as f:
-        json.dump(interviews, f, indent=2)
+    try:
+        with open(INTERVIEWS_FILE, "w") as f:
+            json.dump(interviews, f, indent=2)
+    except Exception as e:
+        print(f"Error saving interviews: {e}")
 
 @app.post("/admin/schedule_interview/")
 async def schedule_interview(request: Request):
@@ -281,6 +303,19 @@ async def upload_resume(file: UploadFile = File(...)):
         # Simple ATS score calculation
         ats_score = min(100, len(found_skills) * 3 + (20 if cgpa and cgpa >= 7.0 else 0) + 30)
 
+        # Save ATS score
+        ats_data = load_json_file(ATS_SCORES_FILE, [])
+        ats_entry = {
+            "id": len(ats_data) + 1,
+            "user_email": "unknown",  # Will be updated when we know the user
+            "score": ats_score,
+            "skills": found_skills,
+            "cgpa": cgpa,
+            "scanned_at": datetime.utcnow().isoformat() + "Z"
+        }
+        ats_data.append(ats_entry)
+        save_json_file(ATS_SCORES_FILE, ats_data)
+
         return {
             "skills": found_skills,
             "cgpa": cgpa,
@@ -325,13 +360,16 @@ async def recommend_jobs(request: Request):
     data = await request.json()
     skills = data.get("skills", [])
     
-    if not skills:
-        # If no skills provided, return all jobs
-        return {"jobs": JOBS_DB}
+    # Only return active jobs
+    active_jobs = [job for job in JOBS_DB if job.get("status") == "active"]
+    
+    if not skills or not active_jobs:
+        # If no skills provided or no jobs available, return all active jobs
+        return {"jobs": active_jobs, "total_matches": len(active_jobs), "skills_analyzed": skills}
     
     # Score jobs by number of matching skills and skill relevance
     scored_jobs = []
-    for job in JOBS_DB:
+    for job in active_jobs:
         match_count = len([s for s in job["skills"] if s.lower() in [skill.lower() for skill in skills]])
         # Bonus points for exact skill matches
         exact_matches = len([s for s in job["skills"] if s.lower() in [skill.lower() for skill in skills]])
@@ -355,10 +393,26 @@ async def recommend_jobs(request: Request):
 async def get_all_jobs():
     return {"jobs": JOBS_DB}
 
-# Store job applications
-JOB_APPLICATIONS = []
+# Helper functions for persistent storage
+def load_json_file(filepath, default=[]):
+    if not os.path.exists(filepath):
+        return default
+    try:
+        with open(filepath, "r") as f:
+            return json.load(f)
+    except:
+        return default
 
-# Store mock test results
+def save_json_file(filepath, data):
+    try:
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"Error saving to {filepath}: {e}")
+
+# Load persistent data
+JOBS_DB = load_json_file(JOBS_FILE, [])
+JOB_APPLICATIONS = load_json_file(APPLICATIONS_FILE, [])
 MOCK_TEST_RESULTS = []
 
 @app.post("/apply_job/")
@@ -388,11 +442,12 @@ async def apply_job(request: Request):
             "user_email": user_email,
             "job_title": job["title"],
             "company": job["company"],
-            "applied_at": "2024-01-01T00:00:00Z",
+            "applied_at": datetime.utcnow().isoformat() + "Z",
             "status": "applied"
         }
         
         JOB_APPLICATIONS.append(application)
+        save_json_file(APPLICATIONS_FILE, JOB_APPLICATIONS)
         
         return {
             "status": "success",
@@ -431,7 +486,7 @@ async def post_job(request: Request):
         
         # Create new job
         new_job = {
-            "id": len(JOBS_DB) + 1,
+            "id": max([j["id"] for j in JOBS_DB], default=0) + 1,
             "title": data["title"],
             "company": data["company"],
             "location": data["location"],
@@ -442,11 +497,12 @@ async def post_job(request: Request):
             "website": data.get("website", ""),
             "type": data.get("type", "Full-time"),
             "posted_by": data["posted_by"],
-            "posted_date": "2024-01-01",
+            "posted_date": datetime.utcnow().strftime("%Y-%m-%d"),
             "status": "active"
         }
         
         JOBS_DB.append(new_job)
+        save_json_file(JOBS_FILE, JOBS_DB)
         
         return {
             "status": "success",
@@ -473,10 +529,12 @@ async def delete_job(job_id: int, posted_by: str):
         
         # Remove job
         JOBS_DB.remove(job)
+        save_json_file(JOBS_FILE, JOBS_DB)
         
         # Remove related applications
         global JOB_APPLICATIONS
         JOB_APPLICATIONS = [app for app in JOB_APPLICATIONS if app["job_id"] != job_id]
+        save_json_file(APPLICATIONS_FILE, JOB_APPLICATIONS)
         
         return {"status": "success", "message": "Job deleted successfully"}
     except HTTPException:
@@ -532,6 +590,44 @@ async def get_mock_test_results(user_email: str = None):
         results = MOCK_TEST_RESULTS
     
     return {"results": results}
+
+# Dashboard Analytics
+@app.get("/get_dashboard_analytics/")
+async def get_dashboard_analytics():
+    try:
+        users = load_users()
+        ats_scores = load_json_file(ATS_SCORES_FILE, [])
+        applications = load_json_file(APPLICATIONS_FILE, [])
+        
+        # User role distribution
+        role_counts = {}
+        for user in users:
+            role = user.get("role", "unknown")
+            role_counts[role] = role_counts.get(role, 0) + 1
+        
+        # Skills distribution from all users
+        all_skills = []
+        for user in users:
+            if "skills" in user:
+                all_skills.extend(user.get("skills", []))
+        
+        skill_counts = {}
+        for skill in all_skills:
+            skill_counts[skill] = skill_counts.get(skill, 0) + 1
+        
+        return {
+            "total_users": len(users),
+            "total_ats_scores": len(ats_scores),
+            "total_applications": len(applications),
+            "total_jobs": len(JOBS_DB),
+            "users_by_role": role_counts,
+            "skill_distribution": skill_counts,
+            "recent_users": users[-10:] if users else [],
+            "recent_applications": applications[-10:] if applications else []
+        }
+    except Exception as e:
+        print(f"Error in get_dashboard_analytics: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Analytics for Job Providers
 @app.get("/get_provider_analytics/")

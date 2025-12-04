@@ -8,7 +8,7 @@ export default function JobSeekerDashboard({ user, scanResult, activeSection, se
   const [resumeResult, setResumeResult] = useState(scanResult);
   const [userProfile, setUserProfile] = useState({
     name: user?.name || "Job Seeker",
-    email: user?.email || "saran@gmail.com",
+    email: user?.email,
     skills: resumeResult?.skills || [],
     atsScore: resumeResult?.ats_score || 'N/A'
   });

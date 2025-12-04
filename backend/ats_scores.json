@@ -1,0 +1,36 @@
+[
+  {
+    "id": 1,
+    "user_email": "unknown",
+    "score": 74,
+    "skills": [
+      "javascript",
+      "css",
+      "python",
+      "html",
+      "java",
+      "go",
+      "express",
+      "machine learning"
+    ],
+    "cgpa": 7.65,
+    "scanned_at": "2025-11-27T04:59:49.098449Z"
+  },
+  {
+    "id": 2,
+    "user_email": "unknown",
+    "score": 74,
+    "skills": [
+      "javascript",
+      "css",
+      "python",
+      "html",
+      "java",
+      "go",
+      "express",
+      "machine learning"
+    ],
+    "cgpa": 7.65,
+    "scanned_at": "2025-11-27T05:00:39.355118Z"
+  }
+]
