@@ -11,3 +11,7 @@ dist/
 *.log
 .firebase/
 package-lock.json
+venv/
+.venv/
+backend/venv/
+backend/.venv/
