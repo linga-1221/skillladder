@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config';
 
 export default function ResumeATS({ user, onResult }) {
   const [file, setFile] = useState(null);
@@ -29,7 +30,7 @@ export default function ResumeATS({ user, onResult }) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/upload_resume/', {
+      const response = await fetch(`${API_URL}/upload_resume/`, {
         method: 'POST',
         body: formData,
       });

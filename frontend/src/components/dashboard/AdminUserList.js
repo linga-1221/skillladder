@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { API_URL } from '../../config';
 
 export default function AdminUserList({ onSelectUser }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/admin/all_users/")
+    fetch(`${API_URL}/admin/all_users/`)
       .then(res => res.json())
       .then(setUsers)
       .finally(() => setLoading(false));

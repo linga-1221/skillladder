@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from '../config';
 
 export default function JobFinderPage({ jobs = [], skillset = [], appliedJobs = [], setAppliedJobs, user }) {
   const [modalJob, setModalJob] = useState(null);
@@ -22,7 +23,7 @@ export default function JobFinderPage({ jobs = [], skillset = [], appliedJobs = 
 
   const loadJobs = async () => {
     try {
-      const response = await fetch('http://localhost:8000/get_all_jobs/');
+      const response = await fetch(`${API_URL}/get_all_jobs/`);
       if (response.ok) {
         const data = await response.json();
         setAllJobs(data.jobs);
@@ -39,7 +40,7 @@ export default function JobFinderPage({ jobs = [], skillset = [], appliedJobs = 
     
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/recommend_jobs/', {
+      const response = await fetch(`${API_URL}/recommend_jobs/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skills: skillset })
@@ -102,7 +103,7 @@ export default function JobFinderPage({ jobs = [], skillset = [], appliedJobs = 
       
       // Try to save to backend if available (optional)
       try {
-        const response = await fetch('http://localhost:8000/apply_job/', {
+        const response = await fetch(`${API_URL}/apply_job/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

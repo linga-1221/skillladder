@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 export default function JobRecommendations({ user, skills }) {
   const [jobs, setJobs] = useState([]);
@@ -19,7 +20,7 @@ export default function JobRecommendations({ user, skills }) {
   const fetchJobRecommendations = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/recommend_jobs/', {
+      const response = await fetch(`${API_URL}/recommend_jobs/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

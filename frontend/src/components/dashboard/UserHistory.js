@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_URL } from '../../config';
 
 export default function UserHistory({ email }) {
   const [history, setHistory] = useState([]);
@@ -7,7 +8,7 @@ export default function UserHistory({ email }) {
   useEffect(() => {
     if (!email) return;
     setLoading(true);
-    fetch(`http://localhost:8000/get_history/?email=${encodeURIComponent(email)}`)
+    fetch(`${API_URL}/get_history/?email=${encodeURIComponent(email)}`)
       .then(res => res.json())
       .then(data => setHistory(data.history || []))
       .finally(() => setLoading(false));

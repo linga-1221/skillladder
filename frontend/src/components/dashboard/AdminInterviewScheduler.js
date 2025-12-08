@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_URL } from '../../config';
 
 export default function AdminInterviewScheduler({ selectedUser }) {
   const [interviews, setInterviews] = useState([]);
@@ -10,7 +11,7 @@ export default function AdminInterviewScheduler({ selectedUser }) {
 
   const fetchInterviews = () => {
     setLoading(true);
-    fetch(`http://localhost:8000/admin/get_interviews/?email=${encodeURIComponent(selectedUser)}`)
+    fetch(`${API_URL}/admin/get_interviews/?email=${encodeURIComponent(selectedUser)}`)
       .then(res => res.json())
       .then(data => setInterviews(data.interviews || []))
       .finally(() => setLoading(false));
@@ -22,7 +23,7 @@ export default function AdminInterviewScheduler({ selectedUser }) {
 
   const handleSchedule = e => {
     e.preventDefault();
-    fetch("http://localhost:8000/admin/schedule_interview/", {
+    fetch(`${API_URL}/admin/schedule_interview/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: selectedUser, round, date, notes })

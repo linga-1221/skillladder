@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config';
 
 export default function Activities({ user }) {
   const [activeTab, setActiveTab] = useState('applied-jobs');
@@ -33,7 +34,7 @@ export default function Activities({ user }) {
       setMediaRecorder(recorder);
       recorder.start();
       
-      const response = await fetch('http://localhost:8000/get_mock_test/', {
+      const response = await fetch(`${API_URL}/get_mock_test/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, difficulty })
@@ -96,7 +97,7 @@ export default function Activities({ user }) {
       stopProctoring();
       
       const correctAnswers = mockTest.questions.map(q => q.correct);
-      const response = await fetch('http://localhost:8000/submit_mock_test/', {
+      const response = await fetch(`${API_URL}/submit_mock_test/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

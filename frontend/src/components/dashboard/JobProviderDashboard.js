@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { API_URL } from '../../config';
 
 export default function JobProviderDashboard({ user }) {
   const [data, setData] = useState({});
@@ -13,7 +14,7 @@ export default function JobProviderDashboard({ user }) {
 
   const loadData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/get_dashboard_analytics/');
+      const response = await fetch(`${API_URL}/get_dashboard_analytics/`);
       const analytics = await response.json();
       
       // Transform backend data to match expected format

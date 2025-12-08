@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { API_URL } from '../config';
 
 export default function ResumeUpload({ onResult }) {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -22,7 +23,7 @@ export default function ResumeUpload({ onResult }) {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const response = await fetch("http://localhost:8000/upload_resume/", {
+      const response = await fetch(`${API_URL}/upload_resume/`, {
         method: "POST",
         body: formData,
         mode: 'cors'

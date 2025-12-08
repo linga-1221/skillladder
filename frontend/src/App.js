@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { API_URL } from './config';
 
 // Removed CareerCounselling, CareerGuidance, Learning, LearnPlatform, CodeCompiler routes per request
 import Login from "./components/Login";
@@ -93,7 +94,7 @@ useEffect(() => {
     });
 
     if (scanResult.skills && scanResult.skills.length > 0) {
-      fetch("http://localhost:8000/recommend_jobs/", {
+      fetch(`${API_URL}/recommend_jobs/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ skills: scanResult.skills })
